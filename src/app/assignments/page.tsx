@@ -25,10 +25,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, MapPin, Pencil } from "lucide-react";
+import { Loader2, MapPin, Pencil, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getSalesmen, addAssignment, getAssignments } from "@/lib/firestore";
 import type { AppUser, Assignment } from "@/lib/types";
+import { generateSalesmanItems } from "@/ai/flows/generate-salesman-items";
 
 export default function AssignmentsPage() {
     const router = useRouter();
@@ -39,6 +40,8 @@ export default function AssignmentsPage() {
     const [salesmanId, setSalesmanId] = useState('');
     const [location, setLocation] = useState('');
     const [itemsToTake, setItemsToTake] = useState('');
+    const [aiItemKeywords, setAiItemKeywords] = useState('');
+    const [isAiGenerating, setIsAiGenerating] = useState(false);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -63,6 +66,26 @@ export default function AssignmentsPage() {
         };
         fetchData();
     }, []);
+
+    const handleGenerateItems = async () => {
+        if (!aiItemKeywords) return;
+        setIsAiGenerating(true);
+        try {
+            const result = await generateSalesmanItems({ items: aiItemKeywords });
+            if (result.itemList) {
+                setItemsToTake(result.itemList);
+            }
+        } catch (e) {
+            console.error("AI item generation failed", e);
+            toast({
+                title: "AI Generation Failed",
+                description: "Could not generate items list. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsAiGenerating(false);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!salesmanId || !location) {
@@ -96,6 +119,7 @@ export default function AssignmentsPage() {
             setSalesmanId('');
             setLocation('');
             setItemsToTake('');
+            setAiItemKeywords('');
 
         } catch (e) {
             console.error("Failed to create assignment:", e);
@@ -146,8 +170,25 @@ export default function AssignmentsPage() {
                             <Label htmlFor="location">Location</Label>
                             <Input id="location" placeholder="e.g., Downtown Market" value={location} onChange={e => setLocation(e.target.value)} disabled={isSaving}/>
                         </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="ai-items">Generate Items with AI (Optional)</Label>
+                            <div className="flex gap-2">
+                                <Input 
+                                    id="ai-items" 
+                                    placeholder="e.g., soap, biscuits, cold drinks" 
+                                    value={aiItemKeywords}
+                                    onChange={e => setAiItemKeywords(e.target.value)}
+                                    disabled={isAiGenerating || isSaving}
+                                />
+                                <Button onClick={handleGenerateItems} disabled={isAiGenerating || !aiItemKeywords} variant="outline" size="icon">
+                                    {isAiGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                                    <span className="sr-only">Generate</span>
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">AI will generate the list in Roman Urdu.</p>
+                        </div>
                          <div className="grid gap-2">
-                            <Label htmlFor="items">Items to Take (Optional)</Label>
+                            <Label htmlFor="items">Items to Take</Label>
                             <Textarea id="items" placeholder="List any items the salesman needs to take..." value={itemsToTake} onChange={e => setItemsToTake(e.target.value)} disabled={isSaving}/>
                         </div>
                         {error && <p className="text-sm text-destructive">{error}</p>}
