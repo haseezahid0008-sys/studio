@@ -1,6 +1,6 @@
 
 
-import { db } from './firebase';
+import { db, storage } from './firebase';
 import {
   collection,
   getDocs,
@@ -16,7 +16,17 @@ import {
   orderBy,
   writeBatch,
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Product, Sale, Expense, Salesman, AppUser, AppSettings, Assignment, WorkerTask } from './types';
+
+// Image Upload function
+export const uploadImage = async (file: File, path: string): Promise<string> => {
+    const storageRef = ref(storage, path);
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+};
+
 
 // Product functions
 const productsCollection = collection(db, 'products');
@@ -64,16 +74,23 @@ export const getSales = async (): Promise<Sale[]> => {
     });
 };
 
-export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName'>, salesmanId: string) => {
+export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'shopImageURL'>, salesmanId: string, shopImageFile?: File) => {
     const salesmanDoc = await getUser(salesmanId);
     
     const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'N/A';
+    
+    let shopImageURL: string | undefined = undefined;
+    if (shopImageFile) {
+        const imagePath = `shop-images/${salesmanId}/${Date.now()}-${shopImageFile.name}`;
+        shopImageURL = await uploadImage(shopImageFile, imagePath);
+    }
 
     const saleWithTimestamp = {
         ...sale,
         salesmanId,
         salesmanName,
-        date: Timestamp.fromDate(new Date(sale.date))
+        date: Timestamp.fromDate(new Date(sale.date)),
+        shopImageURL: shopImageURL,
     }
   return await addDoc(salesCollection, saleWithTimestamp);
 };

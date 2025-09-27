@@ -30,6 +30,7 @@ export type Sale = {
   discount: number;
   total: number;
   amountPaid: number;
+  shopImageURL?: string;
 };
 
 export type Expense = {

@@ -1,8 +1,9 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import {
   Card,
   CardContent,
@@ -21,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Trash2, Loader2 } from "lucide-react"
+import { PlusCircle, Trash2, Loader2, Camera } from "lucide-react"
 import { getProducts, getSalesmen, addSale, getUser } from "@/lib/firestore"
 import type { Product, AppUser } from "@/lib/types"
 import PageHeader from "@/components/page-header"
@@ -39,6 +40,7 @@ export default function NewSalePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [salesmen, setSalesmen] = useState<AppUser[]>([]);
@@ -52,6 +54,8 @@ export default function NewSalePage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [shopImageFile, setShopImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [items, setItems] = useState<SaleItem[]>([
     { productId: "", quantity: 1, unitPrice: 0, total: 0 },
@@ -105,6 +109,18 @@ export default function NewSalePage() {
     setPendingAmount(newPending)
   }, [total, amountPaid])
 
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+          setShopImageFile(file);
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              setImagePreview(reader.result as string);
+          }
+          reader.readAsDataURL(file);
+      }
+  }
+
   const handleItemChange = (index: number, field: keyof SaleItem, value: any) => {
     const newItems = [...items]
     const currentItem = { ...newItems[index] }
@@ -152,13 +168,13 @@ export default function NewSalePage() {
 
       try {
           if(!salesmanId) throw new Error("Salesman not selected");
-          await addSale(saleData, salesmanId);
+          await addSale(saleData, salesmanId, shopImageFile || undefined);
           toast({
               title: "Success",
               description: "Sale recorded successfully.",
           });
           router.push('/sales');
-      } catch (e) {
+      } catch (e) => {
           console.error("Failed to add sale: ", e);
           setError("Failed to record sale. Please try again.");
           setIsSaving(false);
@@ -223,6 +239,18 @@ export default function NewSalePage() {
               <div className="grid gap-2">
                 <Label htmlFor="customer-address">Customer Address</Label>
                 <Input id="customer-address" placeholder="Enter full address" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} disabled={isSaving} required/>
+              </div>
+              <div className="grid gap-2">
+                  <Label htmlFor="shop-image">Shop Image (Optional)</Label>
+                  <Input id="shop-image" type="file" accept="image/*" onChange={handleImageChange} disabled={isSaving} ref={fileInputRef} className="hidden" />
+                   <Button variant="outline" type="button" onClick={() => fileInputRef.current?.click()} disabled={isSaving}>
+                        <Camera className="mr-2"/> Select Image
+                   </Button>
+                  {imagePreview && (
+                    <div className="mt-2">
+                      <Image src={imagePreview} alt="Shop preview" width={100} height={100} className="rounded-md object-cover"/>
+                    </div>
+                  )}
               </div>
             </CardContent>
           </Card>

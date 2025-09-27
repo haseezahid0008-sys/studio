@@ -2,7 +2,8 @@
 'use client';
 
 import Link from "next/link"
-import { PlusCircle, File, Loader2 } from "lucide-react"
+import Image from "next/image"
+import { PlusCircle, File, Loader2, Camera } from "lucide-react"
 import * as XLSX from 'xlsx';
 
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,13 @@ import PageHeader from "@/components/page-header"
 import type { Sale, AppSettings } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { saveAs } from 'file-saver';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 
 export default function SalesPage() {
@@ -72,6 +80,7 @@ export default function SalesPage() {
         'Amount Paid': sale.amountPaid,
         'Pending Amount': sale.total - sale.amountPaid,
         'Status': sale.total > sale.amountPaid ? "Pending" : "Paid",
+        'Image URL': sale.shopImageURL || 'N/A',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
@@ -152,6 +161,7 @@ function SalesTable({ title, description, salesData, currencySymbol }: { title: 
                 Status
               </TableHead>
               <TableHead className="hidden md:table-cell">Date</TableHead>
+              <TableHead>Shop Photo</TableHead>
               <TableHead className="text-right">Total</TableHead>
               <TableHead className="text-right">Pending</TableHead>
             </TableRow>
@@ -173,6 +183,27 @@ function SalesTable({ title, description, salesData, currencySymbol }: { title: 
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {new Date(sale.date).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                    {sale.shopImageURL ? (
+                       <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="icon">
+                                    <Camera className="h-4 w-4" />
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-xl">
+                                <DialogHeader>
+                                    <DialogTitle>Shop Photo for {sale.customerName}</DialogTitle>
+                                </DialogHeader>
+                                <div className="relative h-96 w-full mt-4">
+                                     <Image src={sale.shopImageURL} alt={`Shop photo for ${sale.customerName}`} fill style={{ objectFit: 'contain' }} />
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    ) : (
+                        <span className="text-muted-foreground">N/A</span>
+                    )}
                 </TableCell>
                 <TableCell className="text-right">{currencySymbol}{sale.total.toFixed(2)}</TableCell>
                 <TableCell className="text-right font-semibold text-destructive">
