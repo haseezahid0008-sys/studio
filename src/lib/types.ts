@@ -39,3 +39,9 @@ export type Expense = {
     amount: number;
     notes?: string;
 }
+
+export type AppUser = {
+  uid: string;
+  email: string | null;
+  createdAt: Date;
+}

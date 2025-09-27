@@ -8,15 +8,17 @@ import {
   signInWithEmailAndPassword,
   signOut,
   User,
+  UserCredential,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { addUser } from '@/lib/firestore';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signup: (email: string, password: string) => Promise<any>;
-  login: (email: string, password: string) => Promise<any>;
-  logout: () => Promise<any>;
+  signup: (email: string, password: string) => Promise<UserCredential>;
+  login: (email: string, password: string) => Promise<UserCredential>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,8 +35,17 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signup = (email: string, password: string) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const signup = async (email: string, password: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const { user } = userCredential;
+    if(user) {
+        await addUser({
+            uid: user.uid,
+            email: user.email,
+            createdAt: new Date(),
+        });
+    }
+    return userCredential;
   };
 
   const login = (email: string, password: string) => {

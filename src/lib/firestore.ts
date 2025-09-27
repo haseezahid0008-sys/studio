@@ -9,9 +9,10 @@ import {
   deleteDoc,
   query,
   where,
-  Timestamp
+  Timestamp,
+  setDoc,
 } from 'firebase/firestore';
-import type { Product, Sale, Expense, Salesman } from './types';
+import type { Product, Sale, Expense, Salesman, AppUser } from './types';
 
 // Product functions
 const productsCollection = collection(db, 'products');
@@ -98,3 +99,9 @@ export const getSalesmen = async (): Promise<Salesman[]> => {
     const snapshot = await getDocs(salesmenCollection);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Salesman));
 };
+
+// User functions
+export const addUser = async (user: AppUser) => {
+    const userRef = doc(db, 'users', user.uid);
+    return await setDoc(userRef, user);
+}
