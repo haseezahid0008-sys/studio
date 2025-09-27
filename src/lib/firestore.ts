@@ -1,5 +1,6 @@
 
 
+
 import { db, storage } from './firebase';
 import {
   collection,
@@ -344,7 +345,7 @@ export const getCurrencySymbol = (currencyCode?: string): string => {
         case 'pkr': return '₨';
         case 'usd': return '$';
         case 'eur': return '€';
-        default: return '$';
+        default: return '₨';
     }
 }
 
@@ -483,3 +484,6 @@ export const getAppSettingsWithDefaults = async (): Promise<AppSettings> => {
     };
 };
 
+
+
+    

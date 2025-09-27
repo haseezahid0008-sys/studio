@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Trash2, Loader2, Camera, UserPlus } from "lucide-react"
-import { getProducts, getSalesmen, addSale, getUser, getCustomersBySalesman, addCustomer } from "@/lib/firestore"
-import type { Product, AppUser, Customer } from "@/lib/types"
+import { getProducts, getSalesmen, addSale, getUser, getCustomersBySalesman, addCustomer, getAppSettings, getCurrencySymbol } from "@/lib/firestore"
+import type { Product, AppUser, Customer, AppSettings } from "@/lib/types"
 import PageHeader from "@/components/page-header"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
@@ -211,6 +211,7 @@ export default function NewSalePage() {
   const [salesmen, setSalesmen] = useState<AppUser[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,14 +237,16 @@ export default function NewSalePage() {
       if (!user) return;
       try {
         setIsLoading(true);
-        const [productsData, salesmenData, currentUserData] = await Promise.all([
+        const [productsData, salesmenData, currentUserData, appSettings] = await Promise.all([
           getProducts(),
           getSalesmen(),
-          getUser(user.uid)
+          getUser(user.uid),
+          getAppSettings(),
         ]);
         setProducts(productsData);
         setSalesmen(salesmenData);
         setAppUser(currentUserData);
+        setSettings(appSettings);
         
         let targetSalesmanId = salesmanId;
         if (currentUserData?.role === 'Salesman') {
@@ -391,6 +394,8 @@ export default function NewSalePage() {
     )
   }
   
+  const currencySymbol = getCurrencySymbol(settings?.currency);
+
   return (
     <>
       <PageHeader
@@ -530,7 +535,7 @@ export default function NewSalePage() {
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{currencySymbol}{subtotal.toFixed(2)}</span>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="discount">Discount</Label>
@@ -538,7 +543,7 @@ export default function NewSalePage() {
               </div>
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{currencySymbol}{total.toFixed(2)}</span>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="amount-paid">Amount Paid</Label>
@@ -546,7 +551,7 @@ export default function NewSalePage() {
               </div>
               <div className="flex justify-between text-destructive font-bold text-lg">
                 <span>Pending Amount</span>
-                <span>${pendingAmount.toFixed(2)}</span>
+                <span>{currencySymbol}{pendingAmount.toFixed(2)}</span>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
@@ -562,3 +567,5 @@ export default function NewSalePage() {
     </>
   )
 }
+
+    
