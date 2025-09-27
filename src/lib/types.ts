@@ -7,6 +7,7 @@ export type Product = {
   salePrice: number;
   stock: number;
   reorderLevel: number;
+  expiryDate?: string;
 };
 
 export type Salesman = {

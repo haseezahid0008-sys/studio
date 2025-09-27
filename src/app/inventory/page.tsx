@@ -78,9 +78,9 @@ export default function InventoryPage() {
               <TableRow>
                 <TableHead>Product</TableHead>
                 <TableHead className="hidden sm:table-cell">SKU</TableHead>
-                <TableHead className="hidden sm:table-cell">Unit</TableHead>
                 <TableHead className="text-right">Stock</TableHead>
                 <TableHead className="text-right">Sale Price</TableHead>
+                <TableHead className="hidden md:table-cell">Expiry Date</TableHead>
                 <TableHead className="hidden md:table-cell">Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -92,9 +92,11 @@ export default function InventoryPage() {
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell className="hidden sm:table-cell">{product.sku}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{product.unit}</TableCell>
                   <TableCell className="text-right">{product.stock}</TableCell>
                   <TableCell className="text-right">${product.salePrice.toFixed(2)}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : 'N/A'}
+                  </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <Badge variant={product.stock < product.reorderLevel ? "destructive" : "outline"}>
                         {product.stock < product.reorderLevel ? `Low Stock (${product.reorderLevel})` : "In Stock"}

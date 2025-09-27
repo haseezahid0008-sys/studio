@@ -57,12 +57,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     const formData = new FormData(event.currentTarget);
     const updatedData: Partial<Product> = {
         name: formData.get('name') as string,
-        sku: formData.get('sku') as string,
         unit: formData.get('unit') as string,
         stock: Number(formData.get('stock')),
         costPrice: Number(formData.get('cost-price')),
         salePrice: Number(formData.get('sale-price')),
         reorderLevel: Number(formData.get('reorder-level')),
+        expiryDate: formData.get('expiry-date') as string,
     };
 
     try {
@@ -113,38 +113,44 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             </CardHeader>
             <CardContent className="grid gap-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="name">Product Name</Label>
-                    <Input id="name" name="name" defaultValue={product.name} required/>
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="sku">SKU</Label>
-                    <Input id="sku" name="sku" defaultValue={product.sku} required/>
-                </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="unit">Unit</Label>
-                    <Input id="unit" name="unit" defaultValue={product.unit} required/>
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="stock">Stock</Label>
-                    <Input id="stock" name="stock" type="number" defaultValue={product.stock} required/>
-                </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="name">Product Name</Label>
+                        <Input id="name" name="name" defaultValue={product.name} required/>
+                    </div>
+                     <div className="grid gap-2">
+                        <Label htmlFor="sku">SKU</Label>
+                        <Input id="sku" name="sku" defaultValue={product.sku} readOnly/>
+                    </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="cost-price">Cost Price</Label>
-                    <Input id="cost-price" name="cost-price" type="number" defaultValue={product.costPrice} step="0.01" required/>
+                    <div className="grid gap-2">
+                        <Label htmlFor="unit">Unit</Label>
+                        <Input id="unit" name="unit" defaultValue={product.unit} required/>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="stock">Stock</Label>
+                        <Input id="stock" name="stock" type="number" defaultValue={product.stock} required/>
+                    </div>
                 </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="sale-price">Sale Price</Label>
-                    <Input id="sale-price" name="sale-price" type="number" defaultValue={product.salePrice} step="0.01" required/>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="cost-price">Cost Price</Label>
+                        <Input id="cost-price" name="cost-price" type="number" defaultValue={product.costPrice} step="0.01" required/>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="sale-price">Sale Price</Label>
+                        <Input id="sale-price" name="sale-price" type="number" defaultValue={product.salePrice} step="0.01" required/>
+                    </div>
                 </div>
-                </div>
-                <div className="grid gap-2">
-                <Label htmlFor="reorder-level">Reorder Level</Label>
-                <Input id="reorder-level" name="reorder-level" type="number" defaultValue={product.reorderLevel} required/>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="reorder-level">Reorder Level</Label>
+                        <Input id="reorder-level" name="reorder-level" type="number" defaultValue={product.reorderLevel} required/>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="expiry-date">Expiry Date</Label>
+                        <Input id="expiry-date" name="expiry-date" type="date" defaultValue={product.expiryDate}/>
+                    </div>
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <div className="flex justify-end gap-2">

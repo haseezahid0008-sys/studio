@@ -30,14 +30,20 @@ export default function NewProductPage() {
         setError(null);
 
         const formData = new FormData(event.currentTarget);
+        const name = formData.get('name') as string;
+
+        // Auto-generate SKU
+        const sku = `${name.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+
         const newProduct = {
-            name: formData.get('name') as string,
-            sku: formData.get('sku') as string,
+            name,
+            sku,
             unit: formData.get('unit') as string,
             stock: Number(formData.get('stock')),
             costPrice: Number(formData.get('cost-price')),
             salePrice: Number(formData.get('sale-price')),
             reorderLevel: Number(formData.get('reorder-level')),
+            expiryDate: formData.get('expiry-date') as string,
         };
 
         try {
@@ -73,38 +79,38 @@ export default function NewProductPage() {
             </CardHeader>
             <CardContent className="grid gap-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="name">Product Name</Label>
-                    <Input id="name" name="name" placeholder="e.g., Soap" required />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="sku">SKU</Label>
-                    <Input id="sku" name="sku" placeholder="e.g., JS-SOAP-01" required />
-                </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="unit">Unit</Label>
-                    <Input id="unit" name="unit" placeholder="e.g., piece" required />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="stock">Initial Stock</Label>
-                    <Input id="stock" name="stock" type="number" placeholder="e.g., 100" required />
-                </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="name">Product Name</Label>
+                        <Input id="name" name="name" placeholder="e.g., Soap" required />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="unit">Unit</Label>
+                        <Input id="unit" name="unit" placeholder="e.g., piece" required />
+                    </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="cost-price">Cost Price</Label>
-                    <Input id="cost-price" name="cost-price" type="number" placeholder="e.g., 0.50" step="0.01" required />
+                    <div className="grid gap-2">
+                        <Label htmlFor="stock">Initial Stock</Label>
+                        <Input id="stock" name="stock" type="number" placeholder="e.g., 100" required />
+                    </div>
+                     <div className="grid gap-2">
+                        <Label htmlFor="reorder-level">Reorder Level</Label>
+                        <Input id="reorder-level" name="reorder-level" type="number" placeholder="e.g., 20" required />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="cost-price">Cost Price</Label>
+                        <Input id="cost-price" name="cost-price" type="number" placeholder="e.g., 0.50" step="0.01" required />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="sale-price">Sale Price</Label>
+                        <Input id="sale-price" name="sale-price" type="number" placeholder="e.g., 1.00" step="0.01" required />
+                    </div>
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="sale-price">Sale Price</Label>
-                    <Input id="sale-price" name="sale-price" type="number" placeholder="e.g., 1.00" step="0.01" required />
-                </div>
-                </div>
-                <div className="grid gap-2">
-                <Label htmlFor="reorder-level">Reorder Level</Label>
-                <Input id="reorder-level" name="reorder-level" type="number" placeholder="e.g., 20" required />
+                    <Label htmlFor="expiry-date">Expiry Date (Optional)</Label>
+                    <Input id="expiry-date" name="expiry-date" type="date" />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <div className="flex justify-end gap-2">
