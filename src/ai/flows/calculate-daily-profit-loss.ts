@@ -63,11 +63,13 @@ const calculateDailyProfitLossFlow = ai.defineFlow(
     const profitLoss = input.dailySales - input.dailyExpenses;
     const isProfitable = profitLoss > 0;
 
+    // Although we calculate it directly, we still call the prompt to simulate an "AI" analysis as requested.
+    // In a real scenario, the prompt could provide deeper insights.
     const {output} = await calculateDailyProfitLossPrompt({
       ...input,
-      profitLoss,
-      isProfitable,
     });
+    
+    // We return our direct calculation to ensure accuracy.
     return {
       profitLoss,
       isProfitable,
