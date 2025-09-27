@@ -191,12 +191,31 @@ export const getAssignments = async (): Promise<Assignment[]> => {
     });
 };
 
+export const getAssignment = async (id: string): Promise<Assignment | null> => {
+    const docRef = doc(db, 'assignments', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+            id: docSnap.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp)?.toDate().toISOString()
+        } as Assignment;
+    }
+    return null;
+};
+
 export const addAssignment = async (assignment: Omit<Assignment, 'id' | 'createdAt'>) => {
     const assignmentWithTimestamp = {
         ...assignment,
         createdAt: Timestamp.now()
     }
   return await addDoc(assignmentsCollection, assignmentWithTimestamp);
+};
+
+export const updateAssignment = async (id: string, assignment: Partial<Omit<Assignment, 'id' | 'createdAt'>>) => {
+    const docRef = doc(db, 'assignments', id);
+    return await updateDoc(docRef, assignment);
 };
 
 // Worker Task functions
@@ -214,10 +233,29 @@ export const getWorkerTasks = async (): Promise<WorkerTask[]> => {
     });
 };
 
+export const getWorkerTask = async (id: string): Promise<WorkerTask | null> => {
+    const docRef = doc(db, 'workerTasks', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+            id: docSnap.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp)?.toDate().toISOString()
+        } as WorkerTask;
+    }
+    return null;
+};
+
 export const addWorkerTask = async (task: Omit<WorkerTask, 'id' | 'createdAt'>) => {
     const taskWithTimestamp = {
         ...task,
         createdAt: Timestamp.now()
     }
     return await addDoc(workerTasksCollection, taskWithTimestamp);
+};
+
+export const updateWorkerTask = async (id: string, task: Partial<Omit<WorkerTask, 'id' | 'createdAt'>>) => {
+    const docRef = doc(db, 'workerTasks', id);
+    return await updateDoc(docRef, task);
 };

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import PageHeader from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getSalesmen, addAssignment, getAssignments } from "@/lib/firestore";
 import type { AppUser, Assignment } from "@/lib/types";
@@ -52,7 +53,7 @@ export default function AssignmentsPage() {
                     getAssignments(),
                 ]);
                 setSalesmen(salesmenData);
-                setAssignments(assignmentsData);
+                setAssignments(assignmentsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
             } catch (err) {
                 console.error(err);
                 setError("Failed to load data. Please try again.");
@@ -87,7 +88,9 @@ export default function AssignmentsPage() {
                 description: "Assignment created successfully.",
             });
             // Refresh assignments list
-            getAssignments().then(setAssignments);
+            getAssignments().then(assignmentsData => {
+                 setAssignments(assignmentsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            });
             // Reset form
             setSalesmanId('');
             setTodayLocation('');
@@ -109,6 +112,8 @@ export default function AssignmentsPage() {
             </div>
         )
     }
+    
+    const today = new Date().toISOString().split('T')[0];
 
     return (
         <>
@@ -165,7 +170,7 @@ export default function AssignmentsPage() {
                     </CardHeader>
                     <CardContent>
                        <div className="space-y-6">
-                            {assignments.slice(0, 5).map(assignment => (
+                            {assignments.slice(0, 10).map(assignment => (
                                 <div key={assignment.id} className="flex items-start gap-4">
                                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                                         {assignment.salesmanName.charAt(0)}
@@ -178,6 +183,14 @@ export default function AssignmentsPage() {
                                         </div>
                                          <p className="text-xs text-muted-foreground mt-1">{new Date(assignment.createdAt).toLocaleString()}</p>
                                     </div>
+                                    {new Date(assignment.createdAt).toISOString().split('T')[0] === today && (
+                                        <Button variant="outline" size="icon" asChild>
+                                            <Link href={`/assignments/edit/${assignment.id}`}>
+                                                <Pencil className="h-4 w-4" />
+                                                <span className="sr-only">Edit</span>
+                                            </Link>
+                                        </Button>
+                                    )}
                                 </div>
                             ))}
                              {assignments.length === 0 && (

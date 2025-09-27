@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import PageHeader from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Wrench } from "lucide-react";
+import { Loader2, Wrench, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getWorkers, addWorkerTask, getWorkerTasks } from "@/lib/firestore";
 import type { AppUser, WorkerTask } from "@/lib/types";
@@ -105,6 +106,8 @@ export default function WorkerTasksPage() {
         )
     }
 
+    const today = new Date().toISOString().split('T')[0];
+
     return (
         <>
             <PageHeader
@@ -152,7 +155,7 @@ export default function WorkerTasksPage() {
                     </CardHeader>
                     <CardContent>
                        <div className="space-y-6">
-                            {tasks.slice(0, 5).map(task => (
+                            {tasks.slice(0, 10).map(task => (
                                 <div key={task.id} className="flex items-start gap-4">
                                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                                         {task.workerName.charAt(0)}
@@ -164,6 +167,14 @@ export default function WorkerTasksPage() {
                                         </div>
                                          <p className="text-xs text-muted-foreground mt-1">{new Date(task.createdAt).toLocaleString()}</p>
                                     </div>
+                                    {new Date(task.createdAt).toISOString().split('T')[0] === today && (
+                                        <Button variant="outline" size="icon" asChild>
+                                            <Link href={`/worker-tasks/edit/${task.id}`}>
+                                                <Pencil className="h-4 w-4" />
+                                                <span className="sr-only">Edit</span>
+                                            </Link>
+                                        </Button>
+                                    )}
                                 </div>
                             ))}
                              {tasks.length === 0 && (
