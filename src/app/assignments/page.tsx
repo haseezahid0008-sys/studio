@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect } from "react";
@@ -36,8 +37,7 @@ export default function AssignmentsPage() {
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     
     const [salesmanId, setSalesmanId] = useState('');
-    const [todayLocation, setTodayLocation] = useState('');
-    const [tomorrowLocation, setTomorrowLocation] = useState('');
+    const [location, setLocation] = useState('');
     const [itemsToTake, setItemsToTake] = useState('');
 
     const [isLoading, setIsLoading] = useState(true);
@@ -65,8 +65,8 @@ export default function AssignmentsPage() {
     }, []);
 
     const handleSubmit = async () => {
-        if (!salesmanId || !todayLocation || !tomorrowLocation) {
-            setError("Please select a salesman and fill out both location fields.");
+        if (!salesmanId || !location) {
+            setError("Please select a salesman and fill out the location field.");
             return;
         }
 
@@ -79,8 +79,7 @@ export default function AssignmentsPage() {
             await addAssignment({
                 salesmanId,
                 salesmanName: salesman?.name || 'N/A',
-                todayLocation,
-                tomorrowLocation,
+                location,
                 itemsToTake,
                 status: 'Pending',
                 progressNotes: '',
@@ -95,8 +94,7 @@ export default function AssignmentsPage() {
             });
             // Reset form
             setSalesmanId('');
-            setTodayLocation('');
-            setTomorrowLocation('');
+            setLocation('');
             setItemsToTake('');
 
         } catch (e) {
@@ -116,6 +114,7 @@ export default function AssignmentsPage() {
     }
     
     const today = new Date().toISOString().split('T')[0];
+    const activeAssignments = assignments.filter(a => a.status === 'Pending');
 
     return (
         <>
@@ -144,12 +143,8 @@ export default function AssignmentsPage() {
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="today-location">Today's Location</Label>
-                            <Input id="today-location" placeholder="e.g., Downtown Market" value={todayLocation} onChange={e => setTodayLocation(e.target.value)} disabled={isSaving}/>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="tomorrow-location">Tomorrow's Location</Label>
-                            <Input id="tomorrow-location" placeholder="e.g., Uptown Plaza" value={tomorrowLocation} onChange={e => setTomorrowLocation(e.target.value)} disabled={isSaving}/>
+                            <Label htmlFor="location">Location</Label>
+                            <Input id="location" placeholder="e.g., Downtown Market" value={location} onChange={e => setLocation(e.target.value)} disabled={isSaving}/>
                         </div>
                          <div className="grid gap-2">
                             <Label htmlFor="items">Items to Take (Optional)</Label>
@@ -167,12 +162,12 @@ export default function AssignmentsPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">Recent Plans</CardTitle>
-                         <CardDescription>A log of the most recent plans created.</CardDescription>
+                        <CardTitle className="font-headline">Active Plans</CardTitle>
+                         <CardDescription>A log of the currently active (pending) plans.</CardDescription>
                     </CardHeader>
                     <CardContent>
                        <div className="space-y-6">
-                            {assignments.slice(0, 10).map(assignment => (
+                            {activeAssignments.map(assignment => (
                                 <div key={assignment.id} className="flex items-start gap-4">
                                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                                         {assignment.salesmanName.charAt(0)}
@@ -180,8 +175,7 @@ export default function AssignmentsPage() {
                                     <div className="flex-1">
                                         <p className="font-semibold">{assignment.salesmanName}</p>
                                         <div className="text-sm text-muted-foreground space-y-1">
-                                            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-sky-500" /> <strong>Today:</strong> {assignment.todayLocation}</p>
-                                            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-amber-500" /> <strong>Tomorrow:</strong> {assignment.tomorrowLocation}</p>
+                                            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-sky-500" /> <strong>Location:</strong> {assignment.location}</p>
                                         </div>
                                          <p className="text-xs text-muted-foreground mt-1">{new Date(assignment.createdAt).toLocaleString()}</p>
                                     </div>
@@ -195,8 +189,8 @@ export default function AssignmentsPage() {
                                     )}
                                 </div>
                             ))}
-                             {assignments.length === 0 && (
-                                <p className="text-muted-foreground text-center">No assignments found.</p>
+                             {activeAssignments.length === 0 && (
+                                <p className="text-muted-foreground text-center">No active assignments found.</p>
                              )}
                        </div>
                     </CardContent>

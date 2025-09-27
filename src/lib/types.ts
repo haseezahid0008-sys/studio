@@ -66,8 +66,7 @@ export type Assignment = {
     id: string;
     salesmanId: string;
     salesmanName: string;
-    todayLocation: string;
-    tomorrowLocation: string;
+    location: string;
     itemsToTake?: string;
     createdAt: string;
     status: 'Pending' | 'Visited';

@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useEffect, useState } from 'react';
@@ -43,8 +44,7 @@ import { Label } from '@/components/ui/label';
 
 function SalesmanDashboard({ assignments, userId }: { assignments: Assignment[], userId: string }) {
     const { toast } = useToast();
-    const today = new Date().toISOString().split('T')[0];
-    const todaysAssignment = assignments.find(a => new Date(a.createdAt).toISOString().split('T')[0] === today);
+    const todaysAssignment = assignments.find(a => a.status === 'Pending');
     
     const [progressNotes, setProgressNotes] = useState(todaysAssignment?.progressNotes || "");
     const [status, setStatus] = useState(todaysAssignment?.status || "Pending");
@@ -84,7 +84,7 @@ function SalesmanDashboard({ assignments, userId }: { assignments: Assignment[],
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <p className="font-semibold text-lg">{todaysAssignment.todayLocation}</p>
+                            <p className="font-semibold text-lg">{todaysAssignment.location}</p>
                             <p className="text-muted-foreground">Your destination for today.</p>
                         </div>
                         {todaysAssignment.itemsToTake && (

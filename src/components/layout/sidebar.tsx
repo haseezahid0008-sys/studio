@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -61,6 +62,7 @@ export const allNavItems = [
   { href: '/inventory', icon: Package, label: 'Inventory', roles: ['Admin', 'Manager', 'Worker'] },
   { href: '/expenses', icon: Coins, label: 'Expenses', roles: ['Admin', 'Manager', 'Cashier'] },
   { href: '/reports', icon: FileText, label: 'Reports', roles: ['Admin', 'Manager'] },
+  { href: '/history', icon: History, label: 'History', roles: ['Admin', 'Manager'] },
   { href: '/analysis', icon: AlertTriangle, label: 'P/L Analysis', roles: ['Admin', 'Manager'] },
 ];
 

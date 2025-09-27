@@ -1,4 +1,5 @@
 
+
 import { db } from './firebase';
 import {
   collection,
@@ -13,6 +14,7 @@ import {
   Timestamp,
   setDoc,
   orderBy,
+  writeBatch,
 } from 'firebase/firestore';
 import type { Product, Sale, Expense, Salesman, AppUser, AppSettings, Assignment, WorkerTask } from './types';
 
@@ -182,44 +184,14 @@ const assignmentsCollection = collection(db, 'assignments');
 
 export const getAssignments = async (): Promise<Assignment[]> => {
     const snapshot = await getDocs(query(assignmentsCollection, orderBy('createdAt', 'desc')));
-    const now = new Date();
-    const isAfter8AM = now.getHours() >= 8;
-
-    const assignments = snapshot.docs.map(doc => {
+    return snapshot.docs.map(doc => {
         const data = doc.data();
-        const createdAt = (data.createdAt as Timestamp)?.toDate();
-        
-        const assignment: Assignment = { 
+        return { 
             id: doc.id, 
             ...data,
-            createdAt: createdAt.toISOString()
+            createdAt: (data.createdAt as Timestamp)?.toDate().toISOString()
         } as Assignment;
-
-        const assignmentDate = new Date(createdAt);
-        const isOld = now.toDateString() !== assignmentDate.toDateString();
-
-        if (isOld && isAfter8AM && assignment.tomorrowLocation) {
-            // Logic to shift tomorrow to today
-            const updatedAssignment = {
-                ...assignment,
-                todayLocation: assignment.tomorrowLocation,
-                tomorrowLocation: '',
-                status: 'Pending' as 'Pending',
-                progressNotes: '',
-                createdAt: new Date().toISOString(), // Update creation time to today
-            };
-            const docRef = doc(db, 'assignments', assignment.id);
-            updateDoc(docRef, {
-                ...updatedAssignment,
-                createdAt: Timestamp.now(), // Use server timestamp for update
-            });
-            return updatedAssignment;
-        }
-
-        return assignment;
     });
-
-    return assignments;
 };
 
 export const getAssignment = async (id: string): Promise<Assignment | null> => {
@@ -237,11 +209,29 @@ export const getAssignment = async (id: string): Promise<Assignment | null> => {
 };
 
 export const addAssignment = async (assignment: Omit<Assignment, 'id' | 'createdAt'>) => {
+    const batch = writeBatch(db);
+
+    // Find and archive the current pending assignment for the same salesman
+    const q = query(assignmentsCollection, where("salesmanId", "==", assignment.salesmanId), where("status", "==", "Pending"));
+    const querySnapshot = await getDocs(q);
+
+    querySnapshot.forEach(document => {
+        const assignmentRef = doc(db, 'assignments', document.id);
+        batch.update(assignmentRef, { status: "Visited" }); // Mark old assignment as visited
+    });
+
+    // Add the new assignment
+    const newAssignmentRef = doc(collection(db, 'assignments'));
     const assignmentWithTimestamp = {
         ...assignment,
         createdAt: Timestamp.now()
-    }
-  return await addDoc(assignmentsCollection, assignmentWithTimestamp);
+    };
+    batch.set(newAssignmentRef, assignmentWithTimestamp);
+
+    // Commit the batch
+    await batch.commit();
+
+    return newAssignmentRef;
 };
 
 export const updateAssignment = async (id: string, assignment: Partial<Omit<Assignment, 'id' | 'createdAt'>>) => {

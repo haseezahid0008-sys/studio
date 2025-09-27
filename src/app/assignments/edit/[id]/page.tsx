@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import {
@@ -57,8 +58,7 @@ export default function EditAssignmentPage({ params }: { params: { id: string } 
 
     const formData = new FormData(event.currentTarget);
     const updatedData: Partial<Assignment> = {
-        todayLocation: formData.get('today-location') as string,
-        tomorrowLocation: formData.get('tomorrow-location') as string,
+        location: formData.get('location') as string,
         itemsToTake: formData.get('items') as string,
     };
 
@@ -105,7 +105,7 @@ export default function EditAssignmentPage({ params }: { params: { id: string } 
             <CardHeader>
                 <CardTitle className="font-headline">Plan Details</CardTitle>
                 <CardDescription>
-                  Modify the locations and items for this plan.
+                  Modify the location and items for this plan.
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6">
@@ -114,12 +114,8 @@ export default function EditAssignmentPage({ params }: { params: { id: string } 
                     <Input defaultValue={assignment.salesmanName} readOnly/>
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="today-location">Today's Location</Label>
-                    <Input id="today-location" name="today-location" defaultValue={assignment.todayLocation} required disabled={isSaving}/>
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="tomorrow-location">Tomorrow's Location</Label>
-                    <Input id="tomorrow-location" name="tomorrow-location" defaultValue={assignment.tomorrowLocation} required disabled={isSaving}/>
+                    <Label htmlFor="location">Location</Label>
+                    <Input id="location" name="location" defaultValue={assignment.location} required disabled={isSaving}/>
                 </div>
                 <div className="grid gap-2">
                     <Label htmlFor="items">Items to Take (Optional)</Label>
