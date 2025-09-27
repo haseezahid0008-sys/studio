@@ -61,13 +61,13 @@ export default function ReportsPage() {
   const profitLoss = totalSales - totalExpenses;
 
   return (
-    <div className="@container">
-      <div className="flex items-center justify-between gap-4 mb-4">
+    <div>
+      <div className="flex items-center justify-between gap-4 mb-4 print:hidden">
           <PageHeader
             title="Reports"
             description="Generate sales, expense, and profit/loss reports."
           />
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex items-center gap-2">
             <div className="grid gap-2">
                 <Label htmlFor="start-date" className="text-xs">Start Date</Label>
                 <Input id="start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
@@ -99,7 +99,7 @@ export default function ReportsPage() {
                     Report for the period from {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}
                 </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 @md:grid-cols-3">
+            <CardContent className="grid gap-4 md:grid-cols-3">
                 <div className="p-4 rounded-lg bg-green-50 border border-green-200">
                     <p className="text-sm font-medium text-green-800">Total Sales</p>
                     <p className="text-2xl font-bold text-green-900">{currencySymbol}{totalSales.toLocaleString()}</p>
