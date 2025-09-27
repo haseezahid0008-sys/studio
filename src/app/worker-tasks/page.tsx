@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -23,10 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Wrench, Pencil } from "lucide-react";
+import { Loader2, Wrench, Pencil, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getWorkers, addWorkerTask, getWorkerTasks } from "@/lib/firestore";
 import type { AppUser, WorkerTask } from "@/lib/types";
+import { generateTaskDescription } from "@/ai/flows/generate-task-description";
+
 
 export default function WorkerTasksPage() {
     const router = useRouter();
@@ -36,6 +39,8 @@ export default function WorkerTasksPage() {
     
     const [workerId, setWorkerId] = useState('');
     const [taskDescription, setTaskDescription] = useState('');
+    const [aiTaskKeywords, setAiTaskKeywords] = useState('');
+    const [isAiGenerating, setIsAiGenerating] = useState(false);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -60,6 +65,27 @@ export default function WorkerTasksPage() {
         };
         fetchData();
     }, []);
+
+    const handleGenerateTask = async () => {
+        if (!aiTaskKeywords) return;
+        setIsAiGenerating(true);
+        try {
+            const result = await generateTaskDescription({ keywords: aiTaskKeywords });
+            if (result.taskDescription) {
+                setTaskDescription(result.taskDescription);
+            }
+        } catch (e) {
+            console.error("AI task generation failed", e);
+            toast({
+                title: "AI Generation Failed",
+                description: "Could not generate task description. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsAiGenerating(false);
+        }
+    };
+
 
     const handleSubmit = async () => {
         if (!workerId || !taskDescription) {
@@ -91,6 +117,7 @@ export default function WorkerTasksPage() {
             // Reset form
             setWorkerId('');
             setTaskDescription('');
+            setAiTaskKeywords('');
 
         } catch (e) {
             console.error("Failed to create task:", e);
@@ -138,8 +165,24 @@ export default function WorkerTasksPage() {
                             </Select>
                         </div>
                         <div className="grid gap-2">
+                            <Label htmlFor="ai-task">Generate with AI (Optional)</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="ai-task"
+                                    placeholder="e.g., pack 100 units of soap"
+                                    value={aiTaskKeywords}
+                                    onChange={e => setAiTaskKeywords(e.target.value)}
+                                    disabled={isAiGenerating || isSaving}
+                                />
+                                <Button onClick={handleGenerateTask} disabled={isAiGenerating || !aiTaskKeywords} variant="outline" size="icon">
+                                    {isAiGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                                    <span className="sr-only">Generate</span>
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
                             <Label htmlFor="task">Task Description</Label>
-                            <Textarea id="task" placeholder="e.g., Pack 100 units of soap" value={taskDescription} onChange={e => setTaskDescription(e.target.value)} disabled={isSaving}/>
+                            <Textarea id="task" placeholder="e.g., Your task is to pack 100 units of soap." value={taskDescription} onChange={e => setTaskDescription(e.target.value)} disabled={isSaving}/>
                         </div>
                         {error && <p className="text-sm text-destructive">{error}</p>}
                     </CardContent>
