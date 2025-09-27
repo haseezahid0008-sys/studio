@@ -23,12 +23,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import PageHeader from "@/components/page-header"
 import type { AppUser, Sale, AppSettings } from "@/lib/types";
 import { Loader2 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 type SalesmanData = AppUser & {
   totalRevenue: number;
   totalSales: number;
-  status: string;
-  lastActivity: string;
+  sales: Sale[];
 };
 
 export default function SalesmanActivityPage() {
@@ -48,18 +53,12 @@ export default function SalesmanActivityPage() {
           const salesmanSales = sales.filter(s => s.salesmanName === salesman.name);
           const totalRevenue = salesmanSales.reduce((acc, s) => acc + s.total, 0);
           const totalSales = salesmanSales.length;
-          
-          // Mock check-in/out status
-          const statuses = ["Checked In", "Checked Out"];
-          const status = statuses[Math.floor(Math.random() * statuses.length)];
-          const lastActivity = new Date(new Date().getTime() - Math.random() * 1000 * 60 * 60 * 5).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
           return {
               ...salesman,
               totalRevenue,
               totalSales,
-              status,
-              lastActivity,
+              sales: salesmanSales,
           }
         });
         setSalesmanData(data);
@@ -85,6 +84,7 @@ export default function SalesmanActivityPage() {
       <Card>
          <CardHeader>
             <CardTitle className="font-headline">Salesman Performance</CardTitle>
+            <CardDescription>Review revenue and individual sales for each salesman.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -96,42 +96,59 @@ export default function SalesmanActivityPage() {
               <p className="text-destructive">{error}</p>
             </div>
           ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Salesman</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden sm:table-cell">Total Sales</TableHead>
-                <TableHead className="text-right">Total Revenue</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {salesmanData.map((sm) => (
-                <TableRow key={sm.uid}>
-                  <TableCell>
-                    <div className="flex items-center gap-4">
-                      <Avatar className="hidden h-9 w-9 sm:flex">
-                        <AvatarFallback>{sm.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="grid gap-1">
-                        <p className="text-sm font-medium leading-none">
-                          {sm.name}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={sm.status === 'Checked In' ? 'default' : 'outline'}>
-                        {sm.status}
-                    </Badge>
-                     <p className="text-xs text-muted-foreground"> at {sm.lastActivity}</p>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">{sm.totalSales}</TableCell>
-                  <TableCell className="text-right">{currencySymbol}{sm.totalRevenue.toLocaleString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Accordion type="single" collapsible className="w-full">
+            {salesmanData.map((sm) => (
+                <AccordionItem value={sm.uid} key={sm.uid}>
+                    <AccordionTrigger>
+                        <div className="flex items-center gap-4 w-full pr-4">
+                            <div className="flex items-center gap-4 flex-1">
+                                <Avatar className="hidden h-9 w-9 sm:flex">
+                                    <AvatarFallback>{sm.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="grid gap-1 text-left">
+                                    <p className="text-sm font-medium leading-none">
+                                    {sm.name}
+                                    </p>
+                                </div>
+                            </div>
+                             <div className="text-sm text-muted-foreground hidden sm:block">
+                                Total Sales: <span className="font-bold">{sm.totalSales}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground text-right">
+                                Total Revenue: <span className="font-bold">{currencySymbol}{sm.totalRevenue.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                        <div className="p-4 bg-muted/50 rounded-lg">
+                           <h4 className="font-semibold mb-2">Sales by {sm.name}</h4>
+                            {sm.sales.length > 0 ? (
+                                <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Customer</TableHead>
+                                    <TableHead className="text-right">Amount</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {sm.sales.map(sale => (
+                                    <TableRow key={sale.id}>
+                                        <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+                                        <TableCell>{sale.customerName}</TableCell>
+                                        <TableCell className="text-right">{currencySymbol}{sale.total.toLocaleString()}</TableCell>
+                                    </TableRow>
+                                    ))}
+                                </TableBody>
+                                </Table>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No sales recorded for this salesman.</p>
+                            )}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
+            </Accordion>
           )}
         </CardContent>
       </Card>

@@ -42,7 +42,7 @@ function SalesmanDashboard({ assignments }: { assignments: Assignment[] }) {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <h1 className="text-3xl font-bold font-headline">Your Daily Plan</h1>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6">
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 font-headline"><MapPin className="h-6 w-6"/> Today's Plan</CardTitle>
@@ -62,22 +62,7 @@ function SalesmanDashboard({ assignments }: { assignments: Assignment[] }) {
                             )}
                         </div>
                     ) : (
-                        <p className="text-muted-foreground">No plan for today.</p>
-                    )}
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-headline"><MapPin className="h-6 w-6"/> Tomorrow's Plan</CardTitle>
-                </CardHeader>
-                 <CardContent>
-                    {todaysAssignment ? (
-                        <div>
-                             <p className="font-semibold text-lg">{todaysAssignment.tomorrowLocation}</p>
-                             <p className="text-muted-foreground">Your destination for tomorrow.</p>
-                        </div>
-                    ) : (
-                         <p className="text-muted-foreground">Tomorrow's plan is not yet available.</p>
+                        <p className="text-muted-foreground">No plan assigned for today.</p>
                     )}
                 </CardContent>
             </Card>
