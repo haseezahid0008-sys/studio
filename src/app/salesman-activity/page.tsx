@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -14,30 +18,59 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { salesmen, sales } from "@/lib/data"
+import { getSalesmen, getSales } from "@/lib/firestore"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import PageHeader from "@/components/page-header"
+import type { Salesman, Sale } from "@/lib/types";
+import { Loader2 } from "lucide-react";
+
+type SalesmanData = Salesman & {
+  totalRevenue: number;
+  totalSales: number;
+  status: string;
+  lastActivity: string;
+};
 
 export default function SalesmanActivityPage() {
+  const [salesmanData, setSalesmanData] = useState<SalesmanData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const salesmanData = salesmen.map(salesman => {
-    const salesmanSales = sales.filter(s => s.salesmanName === salesman.name);
-    const totalRevenue = salesmanSales.reduce((acc, s) => acc + s.total, 0);
-    const totalSales = salesmanSales.length;
-    
-    // Mock check-in/out status
-    const statuses = ["Checked In", "Checked Out"];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const lastActivity = new Date(new Date().getTime() - Math.random() * 1000 * 60 * 60 * 5).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [salesmen, sales] = await Promise.all([getSalesmen(), getSales()]);
 
-    return {
-        ...salesman,
-        totalRevenue,
-        totalSales,
-        status,
-        lastActivity,
+        const data = salesmen.map(salesman => {
+          const salesmanSales = sales.filter(s => s.salesmanName === salesman.name);
+          const totalRevenue = salesmanSales.reduce((acc, s) => acc + s.total, 0);
+          const totalSales = salesmanSales.length;
+          
+          // Mock check-in/out status
+          const statuses = ["Checked In", "Checked Out"];
+          const status = statuses[Math.floor(Math.random() * statuses.length)];
+          const lastActivity = new Date(new Date().getTime() - Math.random() * 1000 * 60 * 60 * 5).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          return {
+              ...salesman,
+              totalRevenue,
+              totalSales,
+              status,
+              lastActivity,
+          }
+        });
+        setSalesmanData(data);
+
+      } catch(err) {
+        setError("Failed to fetch salesman data. Please try again later.");
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  });
+    fetchData();
+  }, []);
 
   return (
     <>
@@ -46,7 +79,19 @@ export default function SalesmanActivityPage() {
         description="Track sales and activity for each salesman."
       />
       <Card>
-        <CardContent className="pt-6">
+         <CardHeader>
+            <CardTitle className="font-headline">Salesman Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-destructive">{error}</p>
+            </div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -83,6 +128,7 @@ export default function SalesmanActivityPage() {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
     </>

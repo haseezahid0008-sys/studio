@@ -1,11 +1,11 @@
-import Link from "next/link"
-import { PlusCircle, File } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+'use client';
+
+import Link from "next/link"
+import { Loader2 } from "lucide-react"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -18,11 +18,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { expenses } from "@/lib/data"
+import { getExpenses } from "@/lib/firestore"
 import PageHeader from "@/components/page-header"
+import type { Expense } from "@/lib/types";
+import { useEffect, useState } from "react";
 
 export default function ExpensesPage() {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      try {
+        setIsLoading(true);
+        const expensesData = await getExpenses();
+        setExpenses(expensesData);
+      } catch (err) {
+        setError("Failed to fetch expenses. Please try again later.");
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchExpenses();
+  }, []);
+
   return (
     <>
       <PageHeader
@@ -34,7 +55,19 @@ export default function ExpensesPage() {
         }}
       />
       <Card>
-        <CardContent className="pt-6">
+        <CardHeader>
+            <CardTitle className="font-headline">All Expenses</CardTitle>
+        </CardHeader>
+        <CardContent>
+           {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-destructive">{error}</p>
+            </div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -61,13 +94,16 @@ export default function ExpensesPage() {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
-        <CardFooter>
-          <div className="text-xs text-muted-foreground">
-            Showing <strong>1-{expenses.length}</strong> of <strong>{expenses.length}</strong>{" "}
-            expenses
-          </div>
-        </CardFooter>
+         {!isLoading && !error && (
+            <CardFooter>
+            <div className="text-xs text-muted-foreground">
+                Showing <strong>1-{expenses.length}</strong> of <strong>{expenses.length}</strong>{" "}
+                expenses
+            </div>
+            </CardFooter>
+        )}
       </Card>
     </>
   )

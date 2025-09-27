@@ -1,3 +1,7 @@
+
+'use client'
+
+import { useEffect, useState } from 'react';
 import {
   Activity,
   ArrowUpRight,
@@ -5,6 +9,7 @@ import {
   DollarSign,
   Package,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -24,12 +29,40 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { sales, products, expenses } from '@/lib/data';
+import type { Sale, Product, Expense } from '@/lib/types';
+import { getSales, getProducts, getExpenses } from '@/lib/firestore';
 
 export default function Dashboard() {
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [salesData, productsData, expensesData] = await Promise.all([
+          getSales(),
+          getProducts(),
+          getExpenses(),
+        ]);
+        setSales(salesData);
+        setProducts(productsData);
+        setExpenses(expensesData);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch dashboard data. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const totalRevenue = sales.reduce((acc, sale) => acc + sale.total, 0);
-  const totalSales = sales.length;
+  const totalSalesCount = sales.length;
   const totalExpenses = expenses.reduce((acc, expense) => acc + expense.amount, 0);
   const pendingPayments = sales.reduce(
     (acc, sale) => acc + (sale.total - sale.amountPaid),
@@ -41,6 +74,22 @@ export default function Dashboard() {
   );
 
   const recentSales = sales.slice(0, 5);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-8rem)]">
+        <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-8rem)]">
+        <p className="text-destructive">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -58,7 +107,7 @@ export default function Dashboard() {
                 ${totalRevenue.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">
-                +20.1% from last month
+                Based on {totalSalesCount} sales
               </p>
             </CardContent>
           </Card>
@@ -68,23 +117,23 @@ export default function Dashboard() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-headline">+{totalSales}</div>
+              <div className="text-2xl font-bold font-headline">+{totalSalesCount}</div>
               <p className="text-xs text-muted-foreground">
-                +19% from last month
+                Total sales recorded
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Daily Expenses</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-headline">
                 ${totalExpenses.toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground">
-                +201 since last hour
+               <p className="text-xs text-muted-foreground">
+                Across {expenses.length} records
               </p>
             </CardContent>
           </Card>
@@ -107,7 +156,7 @@ export default function Dashboard() {
               <div className="grid gap-2">
                 <CardTitle className="font-headline">Recent Sales</CardTitle>
                 <CardDescription>
-                  You made {totalSales} sales this month.
+                  You made {totalSalesCount} sales in total.
                 </CardDescription>
               </div>
               <Button asChild size="sm" className="ml-auto gap-1">

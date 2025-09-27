@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -12,13 +12,40 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Printer } from "lucide-react"
+import { Printer, Loader2 } from "lucide-react"
 import PageHeader from "@/components/page-header"
-import { sales, expenses } from "@/lib/data"
+import { getSales, getExpenses } from "@/lib/firestore"
+import type { Sale, Expense } from "@/lib/types"
 
 export default function ReportsPage() {
-  const [startDate, setStartDate] = useState("2024-07-01");
-  const [endDate, setEndDate] = useState("2024-07-31");
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const today = new Date();
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+
+  const [startDate, setStartDate] = useState(firstDayOfMonth);
+  const [endDate, setEndDate] = useState(lastDayOfMonth);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [salesData, expensesData] = await Promise.all([getSales(), getExpenses()]);
+        setSales(salesData);
+        setExpenses(expensesData);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load report data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handlePrint = () => {
     window.print();
@@ -52,6 +79,15 @@ export default function ReportsPage() {
           </div>
       </div>
       
+       {isLoading ? (
+            <div className="flex justify-center items-center h-96">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+             <div className="flex justify-center items-center h-96">
+              <p className="text-destructive">{error}</p>
+            </div>
+          ) : (
       <div id="report-content" className="space-y-8">
         <Card className="print:shadow-none print:border-none">
             <CardHeader>
@@ -130,6 +166,7 @@ export default function ReportsPage() {
             </Card>
         </div>
       </div>
+      )}
       
       <style jsx global>{`
         @media print {

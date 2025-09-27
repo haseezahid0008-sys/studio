@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   Card,
   CardContent,
@@ -20,9 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Trash2 } from "lucide-react"
-import { products, salesmen } from "@/lib/data"
+import { PlusCircle, Trash2, Loader2 } from "lucide-react"
+import { getProducts, getSalesmen, addSale } from "@/lib/firestore"
+import type { Product, Salesman } from "@/lib/types"
 import PageHeader from "@/components/page-header"
+import { useToast } from "@/hooks/use-toast"
 
 type SaleItem = {
   productId: string
@@ -32,6 +35,18 @@ type SaleItem = {
 }
 
 export default function NewSalePage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [salesmen, setSalesmen] = useState<Salesman[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [salesmanId, setSalesmanId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+
   const [items, setItems] = useState<SaleItem[]>([
     { productId: "", quantity: 1, unitPrice: 0, total: 0 },
   ])
@@ -41,6 +56,23 @@ export default function NewSalePage() {
   const [subtotal, setSubtotal] = useState(0)
   const [total, setTotal] = useState(0)
   const [pendingAmount, setPendingAmount] = useState(0)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [productsData, salesmenData] = await Promise.all([getProducts(), getSalesmen()]);
+        setProducts(productsData);
+        setSalesmen(salesmenData);
+      } catch (err) {
+        setError("Failed to load necessary data. Please try again.");
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, [])
 
   useEffect(() => {
     const newSubtotal = items.reduce((acc, item) => acc + item.total, 0)
@@ -82,6 +114,48 @@ export default function NewSalePage() {
     const newItems = items.filter((_, i) => i !== index)
     setItems(newItems)
   }
+
+  const handleSubmit = async () => {
+      if (!salesmanId || !customerName || items.some(i => !i.productId)) {
+          setError("Please fill all required fields: Salesman, Customer Name, and select products for all items.");
+          return;
+      }
+      setIsSaving(true);
+      setError(null);
+
+      const salesman = salesmen.find(s => s.id === salesmanId);
+
+      const newSale = {
+          date: saleDate,
+          salesmanName: salesman?.name || 'N/A',
+          customerName,
+          items: items.map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice })),
+          discount,
+          total,
+          amountPaid,
+      };
+
+      try {
+          await addSale(newSale);
+          toast({
+              title: "Success",
+              description: "Sale recorded successfully.",
+          });
+          router.push('/sales');
+      } catch (e) {
+          console.error("Failed to add sale: ", e);
+          setError("Failed to record sale. Please try again.");
+          setIsSaving(false);
+      }
+  };
+
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-screen">
+            <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
+        </div>
+    )
+  }
   
   return (
     <>
@@ -100,7 +174,7 @@ export default function NewSalePage() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="salesman">Salesman</Label>
-                  <Select>
+                  <Select value={salesmanId} onValueChange={setSalesmanId} disabled={isSaving}>
                     <SelectTrigger id="salesman">
                       <SelectValue placeholder="Select salesman" />
                     </SelectTrigger>
@@ -115,12 +189,12 @@ export default function NewSalePage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="customer">Customer Name</Label>
-                  <Input id="customer" placeholder="Enter customer name" />
+                  <Input id="customer" placeholder="Enter customer name" value={customerName} onChange={e => setCustomerName(e.target.value)} disabled={isSaving}/>
                 </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="date">Sale Date</Label>
-                <Input id="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+                <Input id="date" type="date" value={saleDate} onChange={e => setSaleDate(e.target.value)} disabled={isSaving}/>
               </div>
             </CardContent>
           </Card>
@@ -137,6 +211,7 @@ export default function NewSalePage() {
                     <Select
                       value={item.productId}
                       onValueChange={(value) => handleItemChange(index, "productId", value)}
+                      disabled={isSaving}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select product" />
@@ -156,6 +231,7 @@ export default function NewSalePage() {
                       type="number"
                       value={item.quantity}
                       onChange={(e) => handleItemChange(index, "quantity", parseInt(e.target.value) || 0)}
+                       disabled={isSaving}
                     />
                   </div>
                   <div className="grid gap-1">
@@ -164,19 +240,20 @@ export default function NewSalePage() {
                       type="number"
                       value={item.unitPrice}
                       onChange={(e) => handleItemChange(index, "unitPrice", parseFloat(e.target.value) || 0)}
+                       disabled={isSaving}
                     />
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => removeItem(index)}
-                    disabled={items.length === 1}
+                    disabled={items.length === 1 || isSaving}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
-              <Button variant="outline" size="sm" onClick={addItem}>
+              <Button variant="outline" size="sm" onClick={addItem} disabled={isSaving}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Item
               </Button>
@@ -190,13 +267,14 @@ export default function NewSalePage() {
               <CardTitle className="font-headline">Summary</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
+              {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="discount">Discount</Label>
-                <Input id="discount" type="number" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} />
+                <Input id="discount" type="number" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} disabled={isSaving}/>
               </div>
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
@@ -204,7 +282,7 @@ export default function NewSalePage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="amount-paid">Amount Paid</Label>
-                <Input id="amount-paid" type="number" value={amountPaid} onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)} />
+                <Input id="amount-paid" type="number" value={amountPaid} onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)} disabled={isSaving} />
               </div>
               <div className="flex justify-between text-destructive font-bold text-lg">
                 <span>Pending Amount</span>
@@ -212,8 +290,11 @@ export default function NewSalePage() {
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
-              <Button variant="outline">Cancel</Button>
-              <Button>Save Sale</Button>
+              <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Sale
+              </Button>
             </CardFooter>
           </Card>
         </div>

@@ -1,5 +1,8 @@
+
+'use client';
+
 import Link from "next/link"
-import { PlusCircle, File } from "lucide-react"
+import { PlusCircle, File, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -20,12 +23,33 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { sales } from "@/lib/data"
+import { getSales } from "@/lib/firestore"
 import PageHeader from "@/components/page-header"
+import type { Sale } from "@/lib/types";
+import { useEffect, useState } from "react";
 
 export default function SalesPage() {
-  const allSales = sales;
-  const pendingSales = sales.filter(s => s.total > s.amountPaid);
+  const [allSales, setAllSales] = useState<Sale[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSales = async () => {
+      try {
+        setIsLoading(true);
+        const salesData = await getSales();
+        setAllSales(salesData);
+      } catch (err) {
+        setError("Failed to fetch sales. Please try again later.");
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSales();
+  }, []);
+  
+  const pendingSales = allSales.filter(s => s.total > s.amountPaid);
 
   return (
     <Tabs defaultValue="all">
@@ -54,18 +78,30 @@ export default function SalesPage() {
                 </Button>
             </div>
         </div>
-        <TabsContent value="all">
-            <SalesTable title="All Sales" description="A list of all sales transactions." salesData={allSales} />
-        </TabsContent>
-        <TabsContent value="pending">
-            <SalesTable title="Pending Payments" description="A list of sales with outstanding payments." salesData={pendingSales} />
-        </TabsContent>
+        {isLoading ? (
+            <div className="flex justify-center items-center h-96">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+             <div className="flex justify-center items-center h-96">
+              <p className="text-destructive">{error}</p>
+            </div>
+          ) : (
+            <>
+                <TabsContent value="all">
+                    <SalesTable title="All Sales" description="A list of all sales transactions." salesData={allSales} />
+                </TabsContent>
+                <TabsContent value="pending">
+                    <SalesTable title="Pending Payments" description="A list of sales with outstanding payments." salesData={pendingSales} />
+                </TabsContent>
+            </>
+        )}
     </Tabs>
   )
 }
 
 
-function SalesTable({ title, description, salesData }: { title: string, description: string, salesData: typeof sales }) {
+function SalesTable({ title, description, salesData }: { title: string, description: string, salesData: Sale[] }) {
   return (
     <Card>
       <CardHeader>
