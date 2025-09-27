@@ -60,11 +60,11 @@ export const getSales = async (): Promise<Sale[]> => {
     });
 };
 
-export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'salesmanId'>, salesmanId: string) => {
+export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName'>, salesmanId: string) => {
     const salesmanDoc = await getUser(salesmanId);
     
     // Fallback if name is not available
-    const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'Unknown Salesman';
+    const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'Unknown';
 
     const saleWithTimestamp = {
         ...sale,
