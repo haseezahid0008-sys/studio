@@ -170,8 +170,8 @@ export default function NewSalePage() {
 
 
   const handleSubmit = async () => {
-      if (!salesmanId || !customerName || !customerPhone || !customerAddress || items.some(i => !i.productId)) {
-          setError("Please fill all required fields: Salesman, Customer Details, and select products for all items.");
+      if (!salesmanId || !customerName || !customerPhone || !customerAddress || items.some(i => !i.productId) || !shopImageFile) {
+          setError("Please fill all required fields and capture the shop photo.");
           return;
       }
       setIsSaving(true);
@@ -270,10 +270,10 @@ export default function NewSalePage() {
                 <Input id="customer-address" placeholder="Enter full address" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} disabled={isSaving} required/>
               </div>
               <div className="grid gap-2">
-                  <Label htmlFor="shop-image">Shop Image (Optional)</Label>
-                  <Input id="shop-image" type="file" accept="image/*" onChange={handleImageChange} disabled={isSaving} ref={fileInputRef} className="hidden" />
+                  <Label htmlFor="shop-image">Shop Photo (Required)</Label>
+                  <Input id="shop-image" type="file" accept="image/*" capture="environment" onChange={handleImageChange} disabled={isSaving} ref={fileInputRef} className="hidden" required/>
                    <Button variant="outline" type="button" onClick={() => fileInputRef.current?.click()} disabled={isSaving}>
-                        <Camera className="mr-2"/> Select Image
+                        <Camera className="mr-2"/> Capture Shop Photo
                    </Button>
                   {imagePreview && (
                     <div className="mt-2">
