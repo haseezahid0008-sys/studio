@@ -49,6 +49,8 @@ export default function NewSalePage() {
 
   const [salesmanId, setSalesmanId] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [items, setItems] = useState<SaleItem[]>([
@@ -130,8 +132,8 @@ export default function NewSalePage() {
   }
 
   const handleSubmit = async () => {
-      if (!salesmanId || !customerName || items.some(i => !i.productId)) {
-          setError("Please fill all required fields: Salesman, Customer Name, and select products for all items.");
+      if (!salesmanId || !customerName || !customerPhone || !customerAddress || items.some(i => !i.productId)) {
+          setError("Please fill all required fields: Salesman, Customer Details, and select products for all items.");
           return;
       }
       setIsSaving(true);
@@ -140,6 +142,8 @@ export default function NewSalePage() {
       const saleData = {
           date: saleDate,
           customerName,
+          customerPhone,
+          customerAddress,
           items: items.map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice })),
           discount,
           total,
@@ -147,7 +151,8 @@ export default function NewSalePage() {
       };
 
       try {
-          await addSale(saleData, salesmanId);
+          if(!user) throw new Error("User not authenticated");
+          await addSale(saleData, user.uid);
           toast({
               title: "Success",
               description: "Sale recorded successfully.",
@@ -179,10 +184,14 @@ export default function NewSalePage() {
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline">Sale Details</CardTitle>
+              <CardTitle className="font-headline">Sale & Customer Details</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <div className="grid md:grid-cols-2 gap-4">
+               <div className="grid md:grid-cols-2 gap-4">
+                 <div className="grid gap-2">
+                    <Label htmlFor="date">Sale Date</Label>
+                    <Input id="date" type="date" value={saleDate} onChange={e => setSaleDate(e.target.value)} disabled={isSaving}/>
+                  </div>
                 {appUser?.role !== 'Salesman' && (
                   <div className="grid gap-2">
                     <Label htmlFor="salesman">Salesman</Label>
@@ -200,14 +209,20 @@ export default function NewSalePage() {
                     </Select>
                   </div>
                 )}
+               </div>
+              <div className="grid md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="customer">Customer Name</Label>
-                  <Input id="customer" placeholder="Enter customer name" value={customerName} onChange={e => setCustomerName(e.target.value)} disabled={isSaving}/>
+                  <Input id="customer" placeholder="Enter customer name" value={customerName} onChange={e => setCustomerName(e.target.value)} disabled={isSaving} required/>
+                </div>
+                 <div className="grid gap-2">
+                  <Label htmlFor="customer-phone">Customer Phone</Label>
+                  <Input id="customer-phone" placeholder="Enter phone number" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} disabled={isSaving} required/>
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="date">Sale Date</Label>
-                <Input id="date" type="date" value={saleDate} onChange={e => setSaleDate(e.target.value)} disabled={isSaving}/>
+                <Label htmlFor="customer-address">Customer Address</Label>
+                <Input id="customer-address" placeholder="Enter full address" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} disabled={isSaving} required/>
               </div>
             </CardContent>
           </Card>

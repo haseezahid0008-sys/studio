@@ -23,6 +23,8 @@ export type Sale = {
   date: string;
   salesmanName: string;
   customerName:string;
+  customerPhone: string;
+  customerAddress: string;
   items: SaleItem[];
   discount: number;
   total: number;

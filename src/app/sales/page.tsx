@@ -133,7 +133,12 @@ function SalesTable({ title, description, salesData, currencySymbol }: { title: 
           <TableBody>
             {salesData.map((sale) => (
               <TableRow key={sale.id}>
-                <TableCell className="font-medium">{sale.customerName}</TableCell>
+                <TableCell>
+                  <div className="font-medium">{sale.customerName}</div>
+                  <div className="hidden text-sm text-muted-foreground md:inline">
+                    {sale.customerPhone}
+                  </div>
+                </TableCell>
                 <TableCell className="hidden sm:table-cell">{sale.salesmanName}</TableCell>
                 <TableCell className="hidden sm:table-cell">
                   <Badge variant={sale.total > sale.amountPaid ? "destructive" : "outline"}>
