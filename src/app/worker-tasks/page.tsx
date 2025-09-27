@@ -182,7 +182,7 @@ export default function WorkerTasksPage() {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="task">Task Description</Label>
-                            <Textarea id="task" placeholder="e.g., Your task is to pack 100 units of soap." value={taskDescription} onChange={e => setTaskDescription(e.target.value)} disabled={isSaving}/>
+                            <Textarea id="task" placeholder="e.g., Aapka kaam hai ke 100 soap pack karein." value={taskDescription} onChange={e => setTaskDescription(e.target.value)} disabled={isSaving}/>
                         </div>
                         {error && <p className="text-sm text-destructive">{error}</p>}
                     </CardContent>

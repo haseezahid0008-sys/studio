@@ -17,7 +17,7 @@ const GenerateTaskDescriptionInputSchema = z.object({
 export type GenerateTaskDescriptionInput = z.infer<typeof GenerateTaskDescriptionInputSchema>;
 
 const GenerateTaskDescriptionOutputSchema = z.object({
-  taskDescription: z.string().describe("A clear and concise task description for the worker."),
+  taskDescription: z.string().describe("A clear and concise task description for the worker in Roman Urdu."),
 });
 export type GenerateTaskDescriptionOutput = z.infer<typeof GenerateTaskDescriptionOutputSchema>;
 
@@ -29,15 +29,15 @@ const prompt = ai.definePrompt({
   name: 'generateTaskDescriptionPrompt',
   input: {schema: GenerateTaskDescriptionInputSchema},
   output: {schema: GenerateTaskDescriptionOutputSchema},
-  prompt: `You are an assistant for a manager. Your task is to convert simple keywords into a formal task description for a worker. The description should be clear and direct.
+  prompt: `You are an assistant for a manager. Your task is to convert simple keywords into a formal task description for a worker. The description must be in Roman Urdu and should be clear and direct.
 
   For example, if the input is "pack 50 units of soap", the output should be:
-  "Your task for today is to pack 50 units of soap."
+  "Aapka kaam hai ke 50 soap pack karein."
   
   Another example, if the input is "load 20 cartons into the van", the output should be:
-  "Your task for today is to load 20 cartons into the van."
+  "Aapka kaam hai ke 20 cartons van mein load karein."
 
-  Always start the sentence with "Your task for today is to...".
+  Always start the sentence with "Aapka kaam hai ke...". The entire response must be in Roman Urdu.
 
   Keywords: {{{keywords}}}
   `,
