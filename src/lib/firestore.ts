@@ -81,9 +81,9 @@ export const getSales = async (): Promise<Sale[]> => {
 };
 
 export const getSalesByCustomer = async (customerId: string): Promise<Sale[]> => {
-    const q = query(salesCollection, where("customerId", "==", customerId), orderBy('date', 'desc'));
+    const q = query(salesCollection, where("customerId", "==", customerId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    const sales = snapshot.docs.map(doc => {
         const data = doc.data();
         return { 
             id: doc.id, 
@@ -91,22 +91,31 @@ export const getSalesByCustomer = async (customerId: string): Promise<Sale[]> =>
             date: (data.date as Timestamp)?.toDate().toISOString().split('T')[0]
         } as Sale
     });
+    // Sort in-memory instead of in the query to avoid needing a composite index
+    return sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
 export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'customerName'>, salesmanId: string) => {
     return await runTransaction(db, async (transaction) => {
-        // PRE-TRANSACTION READS (Not needing transactional consistency)
+        // --- PRE-TRANSACTION READS (Not needing transactional consistency) ---
         const salesmanDoc = await getUser(salesmanId);
         const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'N/A';
 
         // --- TRANSACTION STARTS ---
         // 1. ALL TRANSACTIONAL READS FIRST
         const customerRef = doc(db, 'customers', sale.customerId);
-        const customerSnap = await transaction.get(customerRef);
+        let customerSnap;
+        try {
+            customerSnap = await transaction.get(customerRef);
+        } catch (e) {
+             throw new Error("Could not read customer data. " + e);
+        }
 
         if (!customerSnap.exists()) {
             throw new Error("Customer not found!");
         }
+        
+        const customerData = customerSnap.data();
 
         const productRefs = sale.items.map(item => doc(db, 'products', item.productId));
         const productSnaps = await Promise.all(productRefs.map(ref => transaction.get(ref)));
@@ -124,8 +133,8 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'customer
             ...sale,
             salesmanId,
             salesmanName,
-            customerName: customerSnap.data().name,
-            customerPhone: customerSnap.data().phone,
+            customerName: customerData.name,
+            customerPhone: customerData.phone,
             date: Timestamp.fromDate(new Date(sale.date)),
         };
         transaction.set(newSaleRef, saleWithTimestamp);
@@ -143,7 +152,7 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'customer
         // 4. Update customer's total due amount
         const pendingAmount = sale.total - sale.amountPaid;
         if (pendingAmount !== 0) {
-            const currentDue = customerSnap.data().totalDue || 0;
+            const currentDue = customerData.totalDue || 0;
             transaction.update(customerRef, { totalDue: currentDue + pendingAmount });
         }
 
@@ -473,3 +482,4 @@ export const getAppSettingsWithDefaults = async (): Promise<AppSettings> => {
         signupVisible: true,
     };
 };
+
