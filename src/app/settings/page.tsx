@@ -31,14 +31,21 @@ import { useTheme } from "next-themes";
 import { updateProfile } from "firebase/auth";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, updatePassword } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<Partial<AppSettings>>({});
   const [displayName, setDisplayName] = useState(user?.displayName || '');
+  
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isProfileSaving, setIsProfileSaving] = useState(false);
+  const [isPasswordSaving, setIsPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -103,6 +110,36 @@ export default function SettingsPage() {
     }
   }
 
+  const handlePasswordUpdate = async () => {
+    setPasswordError(null);
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 6) {
+        setPasswordError("Password should be at least 6 characters.");
+        return;
+    }
+
+    setIsPasswordSaving(true);
+    try {
+      await updatePassword(currentPassword, newPassword);
+      toast({
+        title: "Success",
+        description: "Password updated successfully."
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error("Failed to update password", error);
+      setPasswordError(error.message || "Failed to update password. Please check your current password and try again.");
+    } finally {
+      setIsPasswordSaving(false);
+    }
+  }
+
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -153,19 +190,23 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="current-password">Current Password</Label>
-            <Input id="current-password" type="password" />
+            <Input id="current-password" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} disabled={isPasswordSaving}/>
           </div>
           <div className="space-y-2">
             <Label htmlFor="new-password">New Password</Label>
-            <Input id="new-password" type="password" />
+            <Input id="new-password" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} disabled={isPasswordSaving}/>
           </div>
            <div className="space-y-2">
             <Label htmlFor="confirm-password">Confirm New Password</Label>
-            <Input id="confirm-password" type="password" />
+            <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} disabled={isPasswordSaving}/>
           </div>
+          {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button disabled>Update Password</Button>
+          <Button onClick={handlePasswordUpdate} disabled={isPasswordSaving}>
+            {isPasswordSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Update Password
+          </Button>
         </CardFooter>
       </Card>
 
@@ -315,5 +356,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

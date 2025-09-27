@@ -10,6 +10,9 @@ import {
   User,
   UserCredential,
   updateProfile,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword as fbUpdatePassword,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { addUser } from '@/lib/firestore';
@@ -20,6 +23,7 @@ interface AuthContextType {
   signup: (email: string, password: string) => Promise<UserCredential>;
   login: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,6 +60,23 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     return signOut(auth);
   };
+  
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user) {
+      throw new Error("No user is signed in.");
+    }
+    if (!user.email) {
+      throw new Error("User does not have an email.");
+    }
+
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    
+    // Re-authenticate the user
+    await reauthenticateWithCredential(user, credential);
+    
+    // Update the password
+    await fbUpdatePassword(user, newPassword);
+  }
 
   const value = {
     user,
@@ -63,6 +84,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     signup,
     login,
     logout,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -75,5 +97,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    
