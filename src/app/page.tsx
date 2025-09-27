@@ -141,10 +141,16 @@ function WorkerDashboard({ tasks, userId }: { tasks: WorkerTask[], userId: strin
     const [progressNotes, setProgressNotes] = useState(todaysTask?.progressNotes || "");
     const [status, setStatus] = useState(todaysTask?.status || "Pending");
     const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleUpdate = async () => {
         if (!todaysTask) return;
+        if (!progressNotes) {
+            setError("Please fill in the progress notes.");
+            return;
+        }
         setIsSaving(true);
+        setError(null);
         try {
             await updateWorkerTask(todaysTask.id, { status, progressNotes });
             toast({
@@ -193,9 +199,10 @@ function WorkerDashboard({ tasks, userId }: { tasks: WorkerTask[], userId: strin
                             </div>
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="notes">Progress Notes</Label>
+                            <Label htmlFor="notes">Progress Notes (e.g., '40 units packed')</Label>
                             <Textarea id="notes" placeholder="e.g., Packed 50 units." value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)} disabled={isSaving} required/>
-                        </div>
+                         </div>
+                         {error && <p className="text-sm text-destructive">{error}</p>}
                     </CardContent>
                      <CardFooter>
                         <Button onClick={handleUpdate} disabled={isSaving}>
