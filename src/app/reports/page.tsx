@@ -2,6 +2,8 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -12,7 +14,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Printer, Loader2 } from "lucide-react"
+import { File, Loader2 } from "lucide-react"
 import PageHeader from "@/components/page-header"
 import { getSales, getExpenses, getAppSettings, getCurrencySymbol } from "@/lib/firestore"
 import type { Sale, Expense, AppSettings } from "@/lib/types"
@@ -49,10 +51,6 @@ export default function ReportsPage() {
     fetchData();
   }, []);
 
-  const handlePrint = () => {
-    window.print();
-  }
-
   const currencySymbol = getCurrencySymbol(settings?.currency);
   const filteredSales = sales.filter(s => s.date >= startDate && s.date <= endDate);
   const filteredExpenses = expenses.filter(e => e.date >= startDate && e.date <= endDate);
@@ -60,9 +58,52 @@ export default function ReportsPage() {
   const totalExpenses = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
   const profitLoss = totalSales - totalExpenses;
 
+  const handleExport = () => {
+    const reportPeriod = `Report from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`;
+
+    // Summary Data
+    const summaryData = [
+      { Metric: "Total Sales", Amount: totalSales },
+      { Metric: "Total Expenses", Amount: totalExpenses },
+      { Metric: "Profit / Loss", Amount: profitLoss },
+    ];
+    const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+    XLSX.utils.sheet_add_aoa(summarySheet, [[reportPeriod]], { origin: "A5" });
+
+
+    // Sales Data
+    const salesData = filteredSales.map(s => ({
+      'Date': new Date(s.date).toLocaleDateString(),
+      'Customer': s.customerName,
+      'Salesman': s.salesmanName,
+      'Amount': s.total,
+    }));
+    const salesSheet = XLSX.utils.json_to_sheet(salesData);
+
+    // Expenses Data
+    const expensesData = filteredExpenses.map(e => ({
+        'Date': new Date(e.date).toLocaleDateString(),
+        'Category': e.category,
+        'Notes': e.notes || 'N/A',
+        'Amount': e.amount
+    }));
+    const expensesSheet = XLSX.utils.json_to_sheet(expensesData);
+
+    // Create Workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Financial Summary");
+    XLSX.utils.book_append_sheet(workbook, salesSheet, "Sales Details");
+    XLSX.utils.book_append_sheet(workbook, expensesSheet, "Expense Details");
+    
+    // Download
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'});
+    saveAs(data, `Financial_Report_${startDate}_to_${endDate}.xlsx`);
+  }
+
   return (
     <div>
-      <div className="flex items-center justify-between gap-4 mb-4 print:hidden">
+      <div className="flex items-center justify-between gap-4 mb-4">
           <PageHeader
             title="Reports"
             description="Generate sales, expense, and profit/loss reports."
@@ -76,8 +117,8 @@ export default function ReportsPage() {
                 <Label htmlFor="end-date" className="text-xs">End Date</Label>
                 <Input id="end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
-            <Button onClick={handlePrint} className="self-end">
-                <Printer className="mr-2 h-4 w-4" /> Print Report
+            <Button onClick={handleExport} className="self-end" disabled={isLoading}>
+                <File className="mr-2 h-4 w-4" /> Export to Excel
             </Button>
           </div>
       </div>
@@ -92,7 +133,7 @@ export default function ReportsPage() {
             </div>
           ) : (
       <div id="report-content" className="space-y-8">
-        <Card className="print:shadow-none print:border-none">
+        <Card>
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">{settings?.appName || 'JS Glow'} - Financial Report</CardTitle>
                 <CardDescription>
@@ -116,7 +157,7 @@ export default function ReportsPage() {
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="print:shadow-none print:border-none">
+            <Card>
                 <CardHeader>
                     <CardTitle>Sales Details</CardTitle>
                 </CardHeader>
@@ -142,7 +183,7 @@ export default function ReportsPage() {
                 </CardContent>
             </Card>
 
-            <Card className="print:shadow-none print:border-none">
+            <Card>
                 <CardHeader>
                     <CardTitle>Expense Details</CardTitle>
                 </CardHeader>
@@ -170,35 +211,6 @@ export default function ReportsPage() {
         </div>
       </div>
       )}
-      
-      <style jsx global>{`
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #report-content, #report-content * {
-                visibility: visible;
-            }
-            #report-content {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-            .print\\:hidden {
-                display: none;
-            }
-            main {
-                padding: 0 !important;
-            }
-            .print\\:shadow-none {
-                box-shadow: none !important;
-            }
-             .print\\:border-none {
-                border: none !important;
-            }
-        }
-      `}</style>
     </div>
   )
 }
