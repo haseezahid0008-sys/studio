@@ -30,10 +30,12 @@ import { useToast } from "@/hooks/use-toast";
 import { getSalesmen, addAssignment, getAssignments } from "@/lib/firestore";
 import type { AppUser, Assignment } from "@/lib/types";
 import { generateSalesmanItems } from "@/ai/flows/generate-salesman-items";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AssignmentsPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const { user } = useAuth();
     const [salesmen, setSalesmen] = useState<AppUser[]>([]);
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     
@@ -88,8 +90,8 @@ export default function AssignmentsPage() {
     };
 
     const handleSubmit = async () => {
-        if (!salesmanId || !location) {
-            setError("Please select a salesman and fill out the location field.");
+        if (!salesmanId || !location || !user) {
+            setError("Please select a salesman, fill out the location field, and ensure you are logged in.");
             return;
         }
 
@@ -106,6 +108,8 @@ export default function AssignmentsPage() {
                 itemsToTake,
                 status: 'Pending',
                 progressNotes: '',
+                assignedById: user.uid,
+                assignedByName: user.displayName || 'Manager',
             });
             toast({
                 title: "Success",

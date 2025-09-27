@@ -20,6 +20,7 @@ import {
   TrendingUp,
   TrendingDown,
   CircleOff,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -99,6 +100,16 @@ function SalesmanDashboard({ assignments, userId }: { assignments: Assignment[],
                             </div>
                         )}
                     </CardContent>
+                    <CardFooter className="flex flex-col items-start gap-2 text-sm text-muted-foreground">
+                        <p className="flex items-center gap-2">
+                            <User className="h-4 w-4" /> 
+                            Assigned by: <span className="font-medium">{todaysAssignment.assignedByName}</span>
+                        </p>
+                         <p className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" /> 
+                            Assigned on: {new Date(todaysAssignment.createdAt).toLocaleString()}
+                        </p>
+                    </CardFooter>
                 </Card>
                  <Card>
                     <CardHeader>

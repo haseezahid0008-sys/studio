@@ -72,6 +72,8 @@ export type Assignment = {
     createdAt: string;
     status: 'Pending' | 'Visited';
     progressNotes?: string;
+    assignedById: string;
+    assignedByName: string;
 }
 
 export type WorkerTask = {
