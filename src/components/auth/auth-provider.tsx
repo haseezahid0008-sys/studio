@@ -14,24 +14,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user && !publicRoutes.includes(pathname)) {
+    if (loading) return; // Wait until loading is false
+
+    const isPublic = publicRoutes.includes(pathname);
+
+    // If user is not logged in and is trying to access a private route, redirect to login
+    if (!user && !isPublic) {
       router.push('/login');
     }
-    if (!loading && user && publicRoutes.includes(pathname)) {
+
+    // If user is logged in and is on a public route, redirect to dashboard
+    if (user && isPublic) {
         router.push('/');
     }
   }, [user, loading, router, pathname]);
 
-  if (loading || (!user && !publicRoutes.includes(pathname))) {
+  // Show a loader while authentication state is loading,
+  // or if we're about to redirect.
+  if (loading || (!user && !publicRoutes.includes(pathname)) || (user && publicRoutes.includes(pathname))) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!loading && user && publicRoutes.includes(pathname)) {
-     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
       </div>
