@@ -129,7 +129,7 @@ export function AppSidebar() {
             <SidebarMenu>
                 {navItems.map((item) => (
                      <SidebarMenuItem key={item.href}>
-                         <Link href={item.href} passHref legacyBehavior>
+                         <Link href={item.href}>
                              <SidebarMenuButton
                                 isActive={pathname === item.href}
                                 >
@@ -144,7 +144,7 @@ export function AppSidebar() {
         <SidebarFooter>
              <SidebarMenu>
                 <SidebarMenuItem>
-                    <Link href="/settings" passHref legacyBehavior>
+                    <Link href="/settings">
                         <SidebarMenuButton
                             isActive={pathname === '/settings'}
                             >
