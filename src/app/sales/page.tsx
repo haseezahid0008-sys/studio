@@ -88,7 +88,7 @@ export default function SalesPage() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sales");
 
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-T'});
+    const data = new Blob([excelBuffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'});
     saveAs(data, `Sales_Report_${new Date().toLocaleDateString()}.xlsx`);
   }
 

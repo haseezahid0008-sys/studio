@@ -36,6 +36,9 @@ type SaleItem = {
   total: number
 }
 
+const CLOUDINARY_CLOUD_NAME = 'dlurl7eyy';
+const CLOUDINARY_UPLOAD_PRESET = 'image-host';
+
 export default function NewSalePage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -147,6 +150,25 @@ export default function NewSalePage() {
     setItems(newItems)
   }
 
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        throw new Error('Image upload failed');
+    }
+
+    const data = await response.json();
+    return data.secure_url;
+  };
+
+
   const handleSubmit = async () => {
       if (!salesmanId || !customerName || !customerPhone || !customerAddress || items.some(i => !i.productId)) {
           setError("Please fill all required fields: Salesman, Customer Details, and select products for all items.");
@@ -154,27 +176,34 @@ export default function NewSalePage() {
       }
       setIsSaving(true);
       setError(null);
-
-      const saleData = {
-          date: saleDate,
-          customerName,
-          customerPhone,
-          customerAddress,
-          items: items.map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice })),
-          discount,
-          total,
-          amountPaid,
-      };
-
+      
+      let shopImageURL: string | undefined = undefined;
       try {
+          if (shopImageFile) {
+              shopImageURL = await uploadToCloudinary(shopImageFile);
+          }
+
+          const saleData = {
+              date: saleDate,
+              customerName,
+              customerPhone,
+              customerAddress,
+              items: items.map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice })),
+              discount,
+              total,
+              amountPaid,
+              shopImageURL,
+          };
+
           if(!salesmanId) throw new Error("Salesman not selected");
-          await addSale(saleData, salesmanId, shopImageFile || undefined);
+          await addSale(saleData, salesmanId);
           toast({
               title: "Success",
               description: "Sale recorded successfully.",
           });
           router.push('/sales');
-      } catch (e) => {
+
+      } catch (e) {
           console.error("Failed to add sale: ", e);
           setError("Failed to record sale. Please try again.");
           setIsSaving(false);
