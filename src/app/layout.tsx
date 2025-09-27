@@ -2,12 +2,13 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { Sidebar } from '@/components/layout/sidebar';
+import { AppSidebar } from '@/components/layout/sidebar';
 import Header from '@/components/layout/header';
 import { AuthContextProvider } from '@/hooks/use-auth';
 import { AuthProvider } from '@/components/auth/auth-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { getAppSettings } from '@/lib/firestore';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getAppSettings();
@@ -42,15 +43,17 @@ export default function RootLayout({
           >
           <AuthContextProvider>
             <AuthProvider>
-              <div className="flex min-h-screen w-full flex-col bg-muted/40">
-                <Sidebar />
-                <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
-                  <Header />
-                  <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-                    {children}
-                  </main>
-                </div>
-              </div>
+                <SidebarProvider>
+                    <div className="flex min-h-screen w-full">
+                        <AppSidebar />
+                        <div className="flex flex-col flex-1">
+                            <Header />
+                            <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+                                {children}
+                            </main>
+                        </div>
+                    </div>
+              </SidebarProvider>
               <Toaster />
             </AuthProvider>
           </AuthContextProvider>

@@ -33,6 +33,13 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+
+    --sidebar-background: 204 100% 97%;
+    --sidebar-foreground: 222 84% 5%;
+    --sidebar-border: 0 0% 89.8%;
+    --sidebar-accent: 0 0% 96.1%;
+    --sidebar-accent-foreground: 222 84% 5%;
+    --sidebar-ring: 195 53% 70%;
   }
   .dark {
     --background: 222 84% 5%;
@@ -59,6 +66,13 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    --sidebar-background: 222 84% 5%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 14.9%;
+    --sidebar-accent: 0 0% 14.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-ring: 0 0% 83.1%;
   }
 }
 

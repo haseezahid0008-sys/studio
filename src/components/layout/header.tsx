@@ -3,18 +3,13 @@
 
 import {
   Home,
-  LineChart,
-  Package,
-  Package2,
-  PanelLeft,
   Search,
-  ShoppingCart,
-  Users2,
-  FileText,
-  BrainCircuit,
   User,
   LogOut,
   Settings,
+  LayoutGrid,
+  DollarSign,
+  ClipboardCopy,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -38,16 +33,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { allNavItems } from './sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from 'next-themes';
 import { getAppSettings, getUser } from '@/lib/firestore';
 import type { AppSettings, AppUser, Role } from '@/lib/types';
+import { SidebarTrigger } from '../ui/sidebar';
 
 const salesmanNavItems = [
-    { href: '/', icon: Home, label: 'Dashboard', roles: ['Salesman'] },
-    { href: '/sales', icon: ShoppingCart, label: 'Sales', roles: ['Salesman'] },
+    { href: '/', icon: LayoutGrid, label: 'Dashboard', roles: ['Salesman'] },
+    { href: '/sales/new', icon: DollarSign, label: 'Sales Entry', roles: ['Salesman'] },
+    { href: '/sales', icon: ClipboardCopy, label: 'Sales Records', roles: ['Salesman'] },
 ]
 
 export default function Header() {
@@ -92,40 +88,8 @@ export default function Header() {
 
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button size="icon" variant="outline" className="sm:hidden">
-            <PanelLeft className="h-5 w-5" />
-            <span className="sr-only">Toggle Menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="sm:max-w-xs">
-          <nav className="grid gap-6 text-lg font-medium">
-            <Link
-              href="/"
-              className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
-            >
-              {logoUrl ? (
-                <Image src={logoUrl} alt="Logo" width={24} height={24} className="transition-all group-hover:scale-110" />
-              ) : (
-                <Package2 className="h-5 w-5 transition-all group-hover:scale-110" />
-              )}
-              <span className="sr-only">{settings?.appName || 'JS Glow'}</span>
-            </Link>
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </SheetContent>
-      </Sheet>
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
+      <SidebarTrigger className="md:hidden" />
       <Breadcrumb className="hidden md:flex">
         <BreadcrumbList>
           <BreadcrumbItem>
