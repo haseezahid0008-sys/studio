@@ -67,7 +67,7 @@ export default function InventoryPage() {
                   </TableCell>
                    <TableCell className="text-right">
                       <Button variant="outline" size="sm" asChild>
-                        <Link href="#">Edit</Link>
+                        <Link href={`/inventory/edit/${product.id}`}>Edit</Link>
                       </Button>
                    </TableCell>
                 </TableRow>
