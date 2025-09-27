@@ -25,10 +25,22 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getAppSettings, updateAppSettings, getUser } from "@/lib/firestore";
+import { getAppSettings, updateAppSettings, getUser, resetAllData } from "@/lib/firestore";
 import type { AppSettings, AppUser } from "@/lib/types";
 import { useTheme } from "next-themes";
 import { updateProfile } from "firebase/auth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 
 export default function SettingsPage() {
   const { user, updatePassword } = useAuth();
@@ -47,6 +59,7 @@ export default function SettingsPage() {
   const [isSavingSecurity, setIsSavingSecurity] = useState(false);
   const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
+  const [isDataResetting, setIsDataResetting] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
 
@@ -164,6 +177,28 @@ export default function SettingsPage() {
       setPasswordError(error.message || "Failed to update password. Please check your current password and try again.");
     } finally {
       setIsPasswordSaving(false);
+    }
+  }
+  
+  const handleResetData = async () => {
+    setIsDataResetting(true);
+    try {
+        await resetAllData();
+        toast({
+            title: "Success!",
+            description: "All application data has been reset. The page will now reload."
+        });
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+    } catch(e) {
+        console.error("Data reset failed: ", e);
+        toast({
+            title: "Error",
+            description: "Failed to reset data. Please check the console and try again.",
+            variant: "destructive",
+        });
+        setIsDataResetting(false);
     }
   }
 
@@ -353,7 +388,26 @@ export default function SettingsPage() {
                 <CardDescription>Permanently delete application data. This is useful for clearing test data.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Button variant="destructive" disabled>Reset Application Data</Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={isDataResetting}>
+                            {isDataResetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Reset Application Data
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete all sales, products, expenses, customers, tasks, and payment data from the server. User accounts will not be deleted.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleResetData}>Confirm Reset</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardContent>
           </Card>
 

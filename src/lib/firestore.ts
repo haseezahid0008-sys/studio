@@ -1,6 +1,5 @@
 
 
-
 import { db, storage } from './firebase';
 import {
   collection,
@@ -484,6 +483,28 @@ export const getAppSettingsWithDefaults = async (): Promise<AppSettings> => {
     };
 };
 
+export const resetAllData = async (): Promise<void> => {
+    const collectionsToDelete = [
+        'sales', 
+        'products', 
+        'expenses', 
+        'customers', 
+        'assignments', 
+        'workerTasks', 
+        'payments'
+    ];
 
+    for (const collectionName of collectionsToDelete) {
+        const collectionRef = collection(db, collectionName);
+        const snapshot = await getDocs(collectionRef);
+        if (snapshot.empty) continue;
+
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+    }
+};
 
     
