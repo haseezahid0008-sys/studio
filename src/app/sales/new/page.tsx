@@ -22,10 +22,11 @@ import {
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Trash2, Loader2 } from "lucide-react"
-import { getProducts, getSalesmen, addSale } from "@/lib/firestore"
-import type { Product, Salesman } from "@/lib/types"
+import { getProducts, getSalesmen, addSale, getUser } from "@/lib/firestore"
+import type { Product, Salesman, AppUser } from "@/lib/types"
 import PageHeader from "@/components/page-header"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 
 type SaleItem = {
   productId: string
@@ -37,8 +38,11 @@ type SaleItem = {
 export default function NewSalePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [salesmen, setSalesmen] = useState<Salesman[]>([]);
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,9 +65,19 @@ export default function NewSalePage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [productsData, salesmenData] = await Promise.all([getProducts(), getSalesmen()]);
+        const [productsData, salesmenData, currentUserData] = await Promise.all([
+          getProducts(), 
+          getSalesmen(),
+          user ? getUser(user.uid) : null
+        ]);
         setProducts(productsData);
         setSalesmen(salesmenData);
+        setAppUser(currentUserData);
+        
+        if (currentUserData?.role === 'Salesman') {
+            setSalesmanId(currentUserData.uid);
+        }
+
       } catch (err) {
         setError("Failed to load necessary data. Please try again.");
         console.error(err);
@@ -72,7 +86,7 @@ export default function NewSalePage() {
       }
     }
     fetchData();
-  }, [])
+  }, [user])
 
   useEffect(() => {
     const newSubtotal = items.reduce((acc, item) => acc + item.total, 0)
@@ -123,11 +137,14 @@ export default function NewSalePage() {
       setIsSaving(true);
       setError(null);
 
-      const salesman = salesmen.find(s => s.id === salesmanId);
+      const salesmanName = appUser?.role === 'Salesman' 
+        ? user?.displayName 
+        : salesmen.find(s => s.id === salesmanId)?.name;
+
 
       const newSale = {
           date: saleDate,
-          salesmanName: salesman?.name || 'N/A',
+          salesmanName: salesmanName || 'N/A',
           customerName,
           items: items.map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice })),
           discount,
@@ -172,21 +189,23 @@ export default function NewSalePage() {
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="salesman">Salesman</Label>
-                  <Select value={salesmanId} onValueChange={setSalesmanId} disabled={isSaving}>
-                    <SelectTrigger id="salesman">
-                      <SelectValue placeholder="Select salesman" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {salesmen.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {appUser?.role !== 'Salesman' && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="salesman">Salesman</Label>
+                    <Select value={salesmanId} onValueChange={setSalesmanId} disabled={isSaving}>
+                      <SelectTrigger id="salesman">
+                        <SelectValue placeholder="Select salesman" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {salesmen.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label htmlFor="customer">Customer Name</Label>
                   <Input id="customer" placeholder="Enter customer name" value={customerName} onChange={e => setCustomerName(e.target.value)} disabled={isSaving}/>
