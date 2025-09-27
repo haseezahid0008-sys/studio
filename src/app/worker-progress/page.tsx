@@ -129,7 +129,7 @@ export default function WorkerProgressPage() {
                                                 {task.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">{task.progressNotes}</TableCell>
+                                        <TableCell>{task.progressNotes}</TableCell>
                                     </TableRow>
                                     ))}
                                 </TableBody>
