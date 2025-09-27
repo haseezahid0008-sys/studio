@@ -75,17 +75,42 @@ export const getSales = async (): Promise<Sale[]> => {
 };
 
 export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName'>, salesmanId: string) => {
-    const salesmanDoc = await getUser(salesmanId);
+    const batch = writeBatch(db);
     
+    // 1. Get Salesman Info
+    const salesmanDoc = await getUser(salesmanId);
     const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'N/A';
 
+    // 2. Prepare Sale Document
+    const newSaleRef = doc(salesCollection);
     const saleWithTimestamp = {
         ...sale,
         salesmanId,
         salesmanName,
         date: Timestamp.fromDate(new Date(sale.date)),
+    };
+    batch.set(newSaleRef, saleWithTimestamp);
+
+    // 3. Update stock for each item in the sale
+    for (const item of sale.items) {
+        if (item.productId && item.quantity > 0) {
+            const productRef = doc(db, 'products', item.productId);
+            const productDoc = await getDoc(productRef);
+
+            if (productDoc.exists()) {
+                const currentStock = productDoc.data().stock as number;
+                const newStock = currentStock - item.quantity;
+                batch.update(productRef, { stock: newStock });
+            } else {
+                console.warn(`Product with ID ${item.productId} not found. Stock not updated.`);
+            }
+        }
     }
-    return await addDoc(salesCollection, saleWithTimestamp);
+
+    // 4. Commit the batch
+    await batch.commit();
+
+    return newSaleRef;
 };
 
 
@@ -309,3 +334,4 @@ export const updateWorkerTask = async (id: string, task: Partial<Omit<WorkerTask
     const docRef = doc(db, 'workerTasks', id);
     return await updateDoc(docRef, task);
 };
+
