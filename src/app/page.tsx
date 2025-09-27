@@ -13,6 +13,8 @@ import {
   MapPin,
   ClipboardList,
   Wrench,
+  CheckCircle,
+  Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -33,69 +35,184 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Sale, Product, Expense, AppSettings, AppUser, Assignment, WorkerTask } from '@/lib/types';
-import { getSales, getProducts, getExpenses, getAppSettings, getCurrencySymbol, getUser, getAssignments, getWorkerTasks } from '@/lib/firestore';
+import { getSales, getProducts, getExpenses, getAppSettings, getCurrencySymbol, getUser, getAssignments, getWorkerTasks, updateAssignment, updateWorkerTask } from '@/lib/firestore';
 import { useAuth } from '@/hooks/use-auth';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
 
-function SalesmanDashboard({ assignments }: { assignments: Assignment[] }) {
+function SalesmanDashboard({ assignments, userId }: { assignments: Assignment[], userId: string }) {
+    const { toast } = useToast();
     const today = new Date().toISOString().split('T')[0];
     const todaysAssignment = assignments.find(a => new Date(a.createdAt).toISOString().split('T')[0] === today);
+    
+    const [progressNotes, setProgressNotes] = useState(todaysAssignment?.progressNotes || "");
+    const [status, setStatus] = useState(todaysAssignment?.status || "Pending");
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleUpdate = async () => {
+        if (!todaysAssignment) return;
+        setIsSaving(true);
+        try {
+            await updateAssignment(todaysAssignment.id, { status, progressNotes });
+            toast({
+                title: "Success",
+                description: "Plan status updated successfully.",
+            });
+        } catch (error) {
+            console.error("Failed to update plan status:", error);
+            toast({
+                title: "Error",
+                description: "Failed to update status. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <h1 className="text-3xl font-bold font-headline">Your Daily Plan</h1>
-        <div className="grid gap-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-headline"><MapPin className="h-6 w-6"/> Today's Plan</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {todaysAssignment ? (
-                        <div className="space-y-4">
-                            <div>
-                                <p className="font-semibold text-lg">{todaysAssignment.todayLocation}</p>
-                                <p className="text-muted-foreground">Your destination for today.</p>
-                            </div>
-                            {todaysAssignment.itemsToTake && (
-                                <div>
-                                    <h3 className="font-semibold flex items-center gap-2"><ClipboardList className="h-5 w-5"/> Items to Take</h3>
-                                    <p className="text-muted-foreground whitespace-pre-wrap">{todaysAssignment.itemsToTake}</p>
-                                </div>
-                            )}
+        {todaysAssignment ? (
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 font-headline"><MapPin className="h-6 w-6"/> Today's Plan</CardTitle>
+                         <CardDescription>Your assigned destination and items for today.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <p className="font-semibold text-lg">{todaysAssignment.todayLocation}</p>
+                            <p className="text-muted-foreground">Your destination for today.</p>
                         </div>
-                    ) : (
-                        <p className="text-muted-foreground">No plan assigned for today.</p>
-                    )}
+                        {todaysAssignment.itemsToTake && (
+                            <div>
+                                <h3 className="font-semibold flex items-center gap-2"><ClipboardList className="h-5 w-5"/> Items to Take</h3>
+                                <p className="text-muted-foreground whitespace-pre-wrap">{todaysAssignment.itemsToTake}</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Update Progress</CardTitle>
+                        <CardDescription>Update the status of your plan for today.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="status">Status</Label>
+                            <div className="flex gap-2">
+                               <Button variant={status === 'Visited' ? 'default' : 'outline'} onClick={() => setStatus('Visited')}><CheckCircle className="mr-2" /> Visited</Button>
+                               <Button variant={status === 'Pending' ? 'default' : 'outline'} onClick={() => setStatus('Pending')}><Clock className="mr-2" /> Pending</Button>
+                            </div>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="notes">Progress Notes (Optional)</Label>
+                            <Textarea id="notes" placeholder="e.g., Visited location, met with client." value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)} disabled={isSaving}/>
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <Button onClick={handleUpdate} disabled={isSaving}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Status
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </div>
+        ) : (
+             <Card>
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center">
+                    <MapPin className="h-12 w-12 text-muted-foreground" />
+                    <p className="mt-4 text-muted-foreground">No plan assigned for today.</p>
                 </CardContent>
             </Card>
-        </div>
+        )}
     </div>
   );
 }
 
-function WorkerDashboard({ tasks }: { tasks: WorkerTask[] }) {
+function WorkerDashboard({ tasks, userId }: { tasks: WorkerTask[], userId: string }) {
+    const { toast } = useToast();
     const today = new Date().toISOString().split('T')[0];
     const todaysTask = tasks.find(t => new Date(t.createdAt).toISOString().split('T')[0] === today);
+    
+    const [progressNotes, setProgressNotes] = useState(todaysTask?.progressNotes || "");
+    const [status, setStatus] = useState(todaysTask?.status || "Pending");
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleUpdate = async () => {
+        if (!todaysTask) return;
+        setIsSaving(true);
+        try {
+            await updateWorkerTask(todaysTask.id, { status, progressNotes });
+            toast({
+                title: "Success",
+                description: "Task status updated successfully.",
+            });
+        } catch (error) {
+            console.error("Failed to update task status:", error);
+            toast({
+                title: "Error",
+                description: "Failed to update status. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <h1 className="text-3xl font-bold font-headline">Your Daily Task</h1>
-        <div className="grid gap-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-headline"><Wrench className="h-6 w-6"/> Today's Task</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {todaysTask ? (
+        {todaysTask ? (
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 font-headline"><Wrench className="h-6 w-6"/> Today's Task</CardTitle>
+                    </CardHeader>
+                    <CardContent>
                         <div className="space-y-2">
                            <p className="font-semibold text-lg">{todaysTask.taskDescription}</p>
                            <p className="text-muted-foreground">This is your assigned task for today.</p>
                         </div>
-                    ) : (
-                        <p className="text-muted-foreground">No task assigned for today.</p>
-                    )}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Update Progress</CardTitle>
+                        <CardDescription>Update the status of your task for today.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="status">Status</Label>
+                             <div className="flex gap-2">
+                               <Button variant={status === 'Completed' ? 'default' : 'outline'} onClick={() => setStatus('Completed')}><CheckCircle className="mr-2" /> Completed</Button>
+                               <Button variant={status === 'In Progress' ? 'default' : 'outline'} onClick={() => setStatus('In Progress')}><Clock className="mr-2" /> In Progress</Button>
+                            </div>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="notes">Progress Notes</Label>
+                            <Textarea id="notes" placeholder="e.g., Packed 50 units." value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)} disabled={isSaving} required/>
+                        </div>
+                    </CardContent>
+                     <CardFooter>
+                        <Button onClick={handleUpdate} disabled={isSaving}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Progress
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </div>
+        ) : (
+            <Card>
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center">
+                    <Wrench className="h-12 w-12 text-muted-foreground" />
+                    <p className="mt-4 text-muted-foreground">No task assigned for today.</p>
                 </CardContent>
             </Card>
-        </div>
+        )}
     </div>
   );
 }
@@ -375,12 +492,12 @@ export default function Dashboard() {
     );
   }
 
-  if (appUser?.role === 'Salesman') {
-      return <SalesmanDashboard assignments={assignments} />;
+  if (appUser?.role === 'Salesman' && user) {
+      return <SalesmanDashboard assignments={assignments} userId={user.uid} />;
   }
   
-  if (appUser?.role === 'Worker') {
-      return <WorkerDashboard tasks={workerTasks} />;
+  if (appUser?.role === 'Worker' && user) {
+      return <WorkerDashboard tasks={workerTasks} userId={user.uid} />;
   }
 
   return <AdminDashboard />;

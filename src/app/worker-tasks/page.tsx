@@ -77,6 +77,8 @@ export default function WorkerTasksPage() {
                 workerId,
                 workerName: worker?.name || 'N/A',
                 taskDescription,
+                status: 'Pending',
+                progressNotes: '',
             });
             toast({
                 title: "Success",

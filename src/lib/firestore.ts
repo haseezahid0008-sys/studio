@@ -1,3 +1,4 @@
+
 import { db } from './firebase';
 import {
   collection,
@@ -11,6 +12,7 @@ import {
   where,
   Timestamp,
   setDoc,
+  orderBy,
 } from 'firebase/firestore';
 import type { Product, Sale, Expense, Salesman, AppUser, AppSettings, Assignment, WorkerTask } from './types';
 
@@ -49,7 +51,7 @@ export const deleteProduct = async (id: string) => {
 const salesCollection = collection(db, 'sales');
 
 export const getSales = async (): Promise<Sale[]> => {
-    const snapshot = await getDocs(salesCollection);
+    const snapshot = await getDocs(query(salesCollection, orderBy('date', 'desc')));
     return snapshot.docs.map(doc => {
         const data = doc.data();
         return { 
@@ -63,8 +65,7 @@ export const getSales = async (): Promise<Sale[]> => {
 export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName'>, salesmanId: string) => {
     const salesmanDoc = await getUser(salesmanId);
     
-    // Fallback if name is not available
-    const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'Unknown';
+    const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'N/A';
 
     const saleWithTimestamp = {
         ...sale,
@@ -80,7 +81,7 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName'>, salesmanI
 const expensesCollection = collection(db, 'expenses');
 
 export const getExpenses = async (): Promise<Expense[]> => {
-    const snapshot = await getDocs(expensesCollection);
+    const snapshot = await getDocs(query(expensesCollection, orderBy('date', 'desc')));
     return snapshot.docs.map(doc => {
         const data = doc.data();
         return { 
@@ -180,7 +181,7 @@ export const getCurrencySymbol = (currencyCode?: string): string => {
 const assignmentsCollection = collection(db, 'assignments');
 
 export const getAssignments = async (): Promise<Assignment[]> => {
-    const snapshot = await getDocs(query(assignmentsCollection));
+    const snapshot = await getDocs(query(assignmentsCollection, orderBy('createdAt', 'desc')));
     return snapshot.docs.map(doc => {
         const data = doc.data();
         return { 
@@ -222,7 +223,7 @@ export const updateAssignment = async (id: string, assignment: Partial<Omit<Assi
 const workerTasksCollection = collection(db, 'workerTasks');
 
 export const getWorkerTasks = async (): Promise<WorkerTask[]> => {
-    const snapshot = await getDocs(query(workerTasksCollection));
+    const snapshot = await getDocs(query(workerTasksCollection, orderBy('createdAt', 'desc')));
     return snapshot.docs.map(doc => {
         const data = doc.data();
         return {

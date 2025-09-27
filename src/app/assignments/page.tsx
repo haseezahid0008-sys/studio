@@ -82,6 +82,8 @@ export default function AssignmentsPage() {
                 todayLocation,
                 tomorrowLocation,
                 itemsToTake,
+                status: 'Pending',
+                progressNotes: '',
             });
             toast({
                 title: "Success",

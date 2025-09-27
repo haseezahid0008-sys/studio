@@ -40,6 +40,7 @@ import {
   Settings,
   Home,
   ShoppingCart,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -52,12 +53,11 @@ import { Button } from '../ui/button';
 export const allNavItems = [
   { href: '/', icon: LayoutGrid, label: 'Dashboard', roles: ['Admin', 'Manager', 'Worker', 'Cashier', 'Salesman'] },
   { href: '/sales/new', icon: DollarSign, label: 'Sales Entry', roles: ['Admin', 'Manager', 'Cashier', 'Salesman'] },
-  // { href: '/customers', icon: Users, label: 'Customers', roles: ['Admin', 'Manager'] },
   { href: '/sales', icon: ClipboardCopy, label: 'Sales Records', roles: ['Admin', 'Manager', 'Cashier', 'Salesman'] },
   { href: '/assignments', icon: ClipboardList, label: 'Salesman Plans', roles: ['Admin', 'Manager'] },
-  // { href: '/sales-plan-history', icon: History, label: 'Sales Plan History', roles: ['Admin', 'Manager'] },
+  { href: '/salesman-activity', icon: UserCheck, label: 'Salesman Activity', roles: ['Admin', 'Manager'] },
   { href: '/worker-tasks', icon: Wrench, label: 'Worker Tasks', roles: ['Admin', 'Manager'] },
-  // { href: '/worker-progress', icon: BarChart, label: 'Worker Progress', roles: ['Admin', 'Manager'] },
+  { href: '/worker-progress', icon: BarChart, label: 'Worker Progress', roles: ['Admin', 'Manager'] },
   { href: '/inventory', icon: Package, label: 'Inventory', roles: ['Admin', 'Manager', 'Worker'] },
   { href: '/expenses', icon: Coins, label: 'Expenses', roles: ['Admin', 'Manager', 'Cashier'] },
   { href: '/reports', icon: FileText, label: 'Reports', roles: ['Admin', 'Manager'] },

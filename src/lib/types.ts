@@ -70,6 +70,8 @@ export type Assignment = {
     tomorrowLocation: string;
     itemsToTake?: string;
     createdAt: string;
+    status: 'Pending' | 'Visited';
+    progressNotes?: string;
 }
 
 export type WorkerTask = {
@@ -78,5 +80,6 @@ export type WorkerTask = {
     workerName: string;
     taskDescription: string;
     createdAt: string;
+    status: 'Pending' | 'In Progress' | 'Completed';
+    progressNotes?: string;
 }
-
