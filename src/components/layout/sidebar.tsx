@@ -55,6 +55,7 @@ export const allNavItems = [
   { href: '/', icon: LayoutGrid, label: 'Dashboard', roles: ['Admin', 'Manager', 'Worker', 'Cashier', 'Salesman'] },
   { href: '/sales/new', icon: DollarSign, label: 'Sales Entry', roles: ['Admin', 'Manager', 'Cashier', 'Salesman'] },
   { href: '/sales', icon: ClipboardCopy, label: 'Sales Records', roles: ['Admin', 'Manager', 'Cashier', 'Salesman'] },
+  { href: '/customers', icon: Users, label: 'Customers', roles: ['Admin', 'Manager', 'Salesman'] },
   { href: '/assignments', icon: ClipboardList, label: 'Salesman Plans', roles: ['Admin', 'Manager'] },
   { href: '/salesman-activity', icon: UserCheck, label: 'Salesman Activity', roles: ['Admin', 'Manager'] },
   { href: '/worker-tasks', icon: Wrench, label: 'Worker Tasks', roles: ['Admin', 'Manager'] },
@@ -69,6 +70,7 @@ const salesmanNavItems = [
     { href: '/', icon: LayoutGrid, label: 'Dashboard', roles: ['Salesman'] },
     { href: '/sales/new', icon: DollarSign, label: 'Sales Entry', roles: ['Salesman'] },
     { href: '/sales', icon: ClipboardCopy, label: 'Sales Records', roles: ['Salesman'] },
+    { href: '/customers', icon: Users, label: 'Customers', roles: ['Salesman'] },
 ]
 
 const workerNavItems = [
@@ -132,7 +134,7 @@ export function AppSidebar() {
                      <SidebarMenuItem key={item.href}>
                          <Link href={item.href}>
                              <SidebarMenuButton
-                                isActive={pathname === item.href}
+                                isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
                                 >
                                 <item.icon />
                                 <span>{item.label}</span>

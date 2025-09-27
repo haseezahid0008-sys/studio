@@ -22,9 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Trash2, Loader2, Camera } from "lucide-react"
-import { getProducts, getSalesmen, addSale, getUser } from "@/lib/firestore"
-import type { Product, AppUser } from "@/lib/types"
+import { PlusCircle, Trash2, Loader2, Camera, UserPlus } from "lucide-react"
+import { getProducts, getSalesmen, addSale, getUser, getCustomersBySalesman, addCustomer } from "@/lib/firestore"
+import type { Product, AppUser, Customer } from "@/lib/types"
 import PageHeader from "@/components/page-header"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
@@ -131,6 +131,76 @@ function CameraModal({ onCapture }: { onCapture: (file: File) => void }) {
     );
 }
 
+function AddCustomerModal({ salesmanId, onCustomerAdded }: { salesmanId: string, onCustomerAdded: (newCustomer: Customer) => void }) {
+    const { toast } = useToast();
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleAddCustomer = async () => {
+        if (!name || !phone) {
+            toast({ title: "Error", description: "Name and phone are required.", variant: "destructive" });
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const newCustomerData = { name, phone, address, salesmanId, totalDue: 0 };
+            const customerRef = await addCustomer(newCustomerData);
+            onCustomerAdded({ ...newCustomerData, id: customerRef.id });
+            toast({ title: "Success", description: "New customer added." });
+            setIsOpen(false);
+            setName('');
+            setPhone('');
+            setAddress('');
+        } catch (error) {
+            console.error("Failed to add customer:", error);
+            toast({ title: "Error", description: "Failed to add new customer.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                    <UserPlus className="mr-2 h-4 w-4" /> Add New Customer
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add New Customer</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="new-customer-name">Customer Name</Label>
+                        <Input id="new-customer-name" value={name} onChange={(e) => setName(e.target.value)} disabled={isSaving} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="new-customer-phone">Phone Number</Label>
+                        <Input id="new-customer-phone" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={isSaving} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="new-customer-address">Address (Optional)</Label>
+                        <Input id="new-customer-address" value={address} onChange={(e) => setAddress(e.target.value)} disabled={isSaving} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleAddCustomer} disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Customer
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export default function NewSalePage() {
   const router = useRouter();
@@ -139,15 +209,14 @@ export default function NewSalePage() {
   
   const [products, setProducts] = useState<Product[]>([]);
   const [salesmen, setSalesmen] = useState<AppUser[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [salesmanId, setSalesmanId] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerAddress, setCustomerAddress] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
   const [shopImageFile, setShopImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -164,19 +233,27 @@ export default function NewSalePage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!user) return;
       try {
         setIsLoading(true);
         const [productsData, salesmenData, currentUserData] = await Promise.all([
-          getProducts(), 
+          getProducts(),
           getSalesmen(),
-          user ? getUser(user.uid) : null
+          getUser(user.uid)
         ]);
         setProducts(productsData);
         setSalesmen(salesmenData);
         setAppUser(currentUserData);
         
-        if (currentUserData?.role === 'Salesman' && user) {
-            setSalesmanId(user.uid);
+        let targetSalesmanId = salesmanId;
+        if (currentUserData?.role === 'Salesman') {
+          targetSalesmanId = user.uid;
+          setSalesmanId(user.uid);
+        }
+        
+        if (targetSalesmanId) {
+          const customerData = await getCustomersBySalesman(targetSalesmanId);
+          setCustomers(customerData);
         }
 
       } catch (err) {
@@ -187,7 +264,7 @@ export default function NewSalePage() {
       }
     }
     fetchData();
-  }, [user])
+  }, [user, salesmanId])
 
   useEffect(() => {
     const newSubtotal = items.reduce((acc, item) => acc + item.total, 0)
@@ -259,8 +336,8 @@ export default function NewSalePage() {
 
 
   const handleSubmit = async () => {
-      if (!salesmanId || !customerName || !customerPhone || !customerAddress || items.some(i => !i.productId) || !shopImageFile) {
-          setError("Please fill all required fields and capture the shop photo.");
+      if (!salesmanId || !customerId || items.some(i => !i.productId) || !shopImageFile) {
+          setError("Please select a salesman, a customer, add items and capture the shop photo.");
           return;
       }
       setIsSaving(true);
@@ -272,11 +349,13 @@ export default function NewSalePage() {
               shopImageURL = await uploadToCloudinary(shopImageFile);
           }
 
+          const customer = customers.find(c => c.id === customerId);
+          if (!customer) throw new Error("Customer not found");
+
           const saleData = {
               date: saleDate,
-              customerName,
-              customerPhone,
-              customerAddress,
+              customerId: customerId,
+              customerName: customer.name,
               items: items.map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice })),
               discount,
               total,
@@ -298,8 +377,13 @@ export default function NewSalePage() {
           setIsSaving(false);
       }
   };
+  
+  const handleCustomerAdded = (newCustomer: Customer) => {
+    setCustomers(prev => [...prev, newCustomer]);
+    setCustomerId(newCustomer.id);
+  }
 
-  if (isLoading) {
+  if (isLoading && !salesmanId) {
     return (
         <div className="flex justify-center items-center h-screen">
             <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
@@ -344,19 +428,24 @@ export default function NewSalePage() {
                   </div>
                 )}
                </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="customer">Customer Name</Label>
-                  <Input id="customer" placeholder="Enter customer name" value={customerName} onChange={e => setCustomerName(e.target.value)} disabled={isSaving} required/>
-                </div>
-                 <div className="grid gap-2">
-                  <Label htmlFor="customer-phone">Customer Phone</Label>
-                  <Input id="customer-phone" placeholder="Enter phone number" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} disabled={isSaving} required/>
-                </div>
-              </div>
               <div className="grid gap-2">
-                <Label htmlFor="customer-address">Customer Address</Label>
-                <Input id="customer-address" placeholder="Enter full address" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} disabled={isSaving} required/>
+                <Label htmlFor="customer">Customer</Label>
+                <div className="flex gap-2">
+                    <Select value={customerId} onValueChange={setCustomerId} disabled={isSaving || !salesmanId}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select an existing customer" />
+                        </SelectTrigger>
+                        <SelectContent>
+                             {customers.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                    {c.name} - {c.phone}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {salesmanId && <AddCustomerModal salesmanId={salesmanId} onCustomerAdded={handleCustomerAdded} />}
+                </div>
+                {!salesmanId && <p className="text-xs text-muted-foreground">Please select a salesman to see customers.</p>}
               </div>
               <div className="grid gap-2">
                   <Label htmlFor="shop-image">Shop Photo (Required)</Label>

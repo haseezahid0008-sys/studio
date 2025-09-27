@@ -23,15 +23,23 @@ export type Sale = {
   date: string;
   salesmanId: string;
   salesmanName: string;
-  customerName:string;
-  customerPhone: string;
-  customerAddress: string;
+  customerId: string;
+  customerName: string;
   items: SaleItem[];
   discount: number;
   total: number;
   amountPaid: number;
   shopImageURL?: string;
 };
+
+export type Payment = {
+    id: string;
+    saleId: string;
+    amount: number;
+    date: string;
+    recordedById: string;
+    recordedByName: string;
+}
 
 export type Expense = {
     id: string;
@@ -50,6 +58,15 @@ export type AppUser = {
   name: string;
   createdAt: Date;
   role?: Role;
+}
+
+export type Customer = {
+    id: string;
+    name: string;
+    phone: string;
+    address: string;
+    salesmanId: string;
+    totalDue: number;
 }
 
 export type AppSettings = {

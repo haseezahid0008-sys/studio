@@ -378,7 +378,7 @@ function AdminDashboard() {
     const totalSalesCount = sales.length;
     const totalExpenses = expenses.reduce((acc, expense) => acc + expense.amount, 0);
     const pendingPayments = sales.reduce(
-        (acc, sale) => acc + (sale.total - sale.amountPaid),
+        (acc, sale) => acc + (sale.total - (sale.amountPaid || 0)),
         0
     );
     const stockAlerts = products.filter(
@@ -440,7 +440,7 @@ function AdminDashboard() {
             <CardContent>
               <div className="text-2xl font-bold font-headline">{currencySymbol}{pendingPayments.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                From {sales.filter(s => s.total > s.amountPaid).length} invoices
+                From {sales.filter(s => s.total > (s.amountPaid || 0)).length} invoices
               </p>
             </CardContent>
           </Card>
@@ -491,8 +491,8 @@ function AdminDashboard() {
                         Sale
                       </TableCell>
                       <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant={sale.total > sale.amountPaid ? "destructive" : "default"}>
-                          {sale.total > sale.amountPaid ? 'Pending' : 'Paid'}
+                        <Badge className="text-xs" variant={sale.total > (sale.amountPaid || 0) ? "destructive" : "default"}>
+                          {sale.total > (sale.amountPaid || 0) ? 'Pending' : 'Paid'}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell lg:hidden xl:table-column">

@@ -15,9 +15,10 @@ import {
   setDoc,
   orderBy,
   writeBatch,
+  runTransaction,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import type { Product, Sale, Expense, AppUser, AppSettings, Assignment, WorkerTask } from './types';
+import type { Product, Sale, Expense, AppUser, AppSettings, Assignment, WorkerTask, Customer, Payment } from './types';
 
 // Image Upload function (Firebase Storage - kept for other potential uses)
 export const uploadImage = async (file: File, path: string): Promise<string> => {
@@ -61,6 +62,7 @@ export const deleteProduct = async (id: string) => {
 
 // Sales functions
 const salesCollection = collection(db, 'sales');
+const paymentsCollection = collection(db, 'payments');
 
 export const getSales = async (): Promise<Sale[]> => {
     const snapshot = await getDocs(query(salesCollection, orderBy('date', 'desc')));
@@ -74,44 +76,127 @@ export const getSales = async (): Promise<Sale[]> => {
     });
 };
 
-export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName'>, salesmanId: string) => {
-    const batch = writeBatch(db);
-    
-    // 1. Get Salesman Info
-    const salesmanDoc = await getUser(salesmanId);
-    const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'N/A';
+export const getSalesByCustomer = async (customerId: string): Promise<Sale[]> => {
+    const q = query(salesCollection, where("customerId", "==", customerId), orderBy('date', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            id: doc.id, 
+            ...data,
+            date: (data.date as Timestamp)?.toDate().toISOString().split('T')[0]
+        } as Sale
+    });
+}
 
-    // 2. Prepare Sale Document
-    const newSaleRef = doc(salesCollection);
-    const saleWithTimestamp = {
-        ...sale,
-        salesmanId,
-        salesmanName,
-        date: Timestamp.fromDate(new Date(sale.date)),
-    };
-    batch.set(newSaleRef, saleWithTimestamp);
+export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'customerName'>, salesmanId: string) => {
+    return await runTransaction(db, async (transaction) => {
+        // 1. Get Salesman and Customer Info
+        const salesmanDoc = await getUser(salesmanId);
+        const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'N/A';
+        const customerRef = doc(db, 'customers', sale.customerId);
+        const customerSnap = await transaction.get(customerRef);
+        if (!customerSnap.exists()) {
+            throw new Error("Customer not found!");
+        }
+        const customerName = customerSnap.data().name;
 
-    // 3. Update stock for each item in the sale
-    for (const item of sale.items) {
-        if (item.productId && item.quantity > 0) {
-            const productRef = doc(db, 'products', item.productId);
-            const productDoc = await getDoc(productRef);
+        // 2. Prepare Sale Document
+        const newSaleRef = doc(salesCollection);
+        const saleWithTimestamp = {
+            ...sale,
+            salesmanId,
+            salesmanName,
+            customerName,
+            date: Timestamp.fromDate(new Date(sale.date)),
+        };
+        transaction.set(newSaleRef, saleWithTimestamp);
 
-            if (productDoc.exists()) {
-                const currentStock = productDoc.data().stock as number;
-                const newStock = currentStock - item.quantity;
-                batch.update(productRef, { stock: newStock });
-            } else {
-                console.warn(`Product with ID ${item.productId} not found. Stock not updated.`);
+        // 3. Update stock for each item in the sale
+        for (const item of sale.items) {
+            if (item.productId && item.quantity > 0) {
+                const productRef = doc(db, 'products', item.productId);
+                const productDoc = await transaction.get(productRef);
+
+                if (productDoc.exists()) {
+                    const currentStock = productDoc.data().stock as number;
+                    const newStock = currentStock - item.quantity;
+                    transaction.update(productRef, { stock: newStock });
+                } else {
+                    throw new Error(`Product with ID ${item.productId} not found.`);
+                }
             }
         }
-    }
+        
+        // 4. Update customer's total due amount
+        const pendingAmount = sale.total - sale.amountPaid;
+        if (pendingAmount > 0) {
+            const currentDue = customerSnap.data().totalDue || 0;
+            transaction.update(customerRef, { totalDue: currentDue + pendingAmount });
+        }
 
-    // 4. Commit the batch
-    await batch.commit();
-
-    return newSaleRef;
+        // 5. If initial payment exists, add it to payments collection
+        if (sale.amountPaid > 0) {
+            const newPaymentRef = doc(paymentsCollection);
+            transaction.set(newPaymentRef, {
+                saleId: newSaleRef.id,
+                amount: sale.amountPaid,
+                date: Timestamp.fromDate(new Date(sale.date)),
+                recordedById: salesmanId,
+                recordedByName: salesmanName,
+            });
+        }
+        
+        return newSaleRef;
+    });
 };
+
+export const getPaymentsForSale = async (saleId: string): Promise<Payment[]> => {
+    const q = query(paymentsCollection, where("saleId", "==", saleId), orderBy("date", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: (data.date as Timestamp)?.toDate().toISOString().split('T')[0]
+        } as Payment;
+    });
+};
+
+export const addPayment = async (paymentData: Omit<Payment, 'id' | 'date'>) => {
+    return await runTransaction(db, async (transaction) => {
+        const { saleId, amount, recordedById } = paymentData;
+
+        // 1. Get Sale and Customer
+        const saleRef = doc(db, 'sales', saleId);
+        const saleSnap = await transaction.get(saleRef);
+        if (!saleSnap.exists()) throw new Error("Sale not found");
+        const sale = saleSnap.data() as Sale;
+
+        const customerRef = doc(db, 'customers', sale.customerId);
+        const customerSnap = await transaction.get(customerRef);
+        if (!customerSnap.exists()) throw new Error("Customer not found");
+        
+        // 2. Add payment record
+        const newPaymentRef = doc(paymentsCollection);
+        const paymentWithTimestamp = {
+            ...paymentData,
+            date: Timestamp.now(),
+        }
+        transaction.set(newPaymentRef, paymentWithTimestamp);
+
+        // 3. Update sale's amountPaid
+        const newAmountPaid = (sale.amountPaid || 0) + amount;
+        transaction.update(saleRef, { amountPaid: newAmountPaid });
+
+        // 4. Update customer's totalDue
+        const currentDue = customerSnap.data().totalDue || 0;
+        transaction.update(customerRef, { totalDue: currentDue - amount });
+
+        return newPaymentRef;
+    });
+}
 
 
 // Expenses functions
@@ -169,6 +254,27 @@ export const getUser = async (uid: string): Promise<AppUser | null> => {
     return null;
 }
 
+// Customer Functions
+const customersCollection = collection(db, 'customers');
+
+export const getCustomersBySalesman = async(salesmanId: string): Promise<Customer[]> => {
+    const q = query(customersCollection, where("salesmanId", "==", salesmanId), orderBy("name"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+}
+
+export const getCustomer = async (id: string): Promise<Customer | null> => {
+    const docRef = doc(db, 'customers', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as Customer;
+    }
+    return null;
+};
+
+export const addCustomer = async (customer: Omit<Customer, 'id'>) => {
+    return await addDoc(customersCollection, customer);
+}
 
 // App Settings functions
 const settingsDocRef = doc(db, 'settings', 'appSettings');
