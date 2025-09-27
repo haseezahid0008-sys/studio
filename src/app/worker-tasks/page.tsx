@@ -109,6 +109,7 @@ export default function WorkerTasksPage() {
     }
 
     const today = new Date().toISOString().split('T')[0];
+    const recentTasks = tasks.slice(0, 10);
 
     return (
         <>
@@ -157,7 +158,7 @@ export default function WorkerTasksPage() {
                     </CardHeader>
                     <CardContent>
                        <div className="space-y-6">
-                            {tasks.slice(0, 10).map(task => (
+                            {recentTasks.map(task => (
                                 <div key={task.id} className="flex items-start gap-4">
                                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                                         {task.workerName.charAt(0)}
@@ -179,7 +180,7 @@ export default function WorkerTasksPage() {
                                     )}
                                 </div>
                             ))}
-                             {tasks.length === 0 && (
+                             {recentTasks.length === 0 && (
                                 <p className="text-muted-foreground text-center">No tasks found.</p>
                              )}
                        </div>
