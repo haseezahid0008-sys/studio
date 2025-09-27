@@ -29,6 +29,7 @@ export default function SignupPage() {
   const { signup } = useAuth();
   const { theme } = useTheme();
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role | ''>('');
@@ -47,10 +48,14 @@ export default function SignupPage() {
         setError('Please select a role.');
         return;
     }
+    if (!name) {
+        setError('Please enter your name.');
+        return;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      await signup(email, password, role);
+      await signup(email, password, name, role);
       router.push('/');
     } catch (error) {
       setError('Failed to sign up. The email might already be in use.');
@@ -94,6 +99,18 @@ export default function SignupPage() {
             </p>
           </div>
           <form onSubmit={handleSignup} className="grid gap-4">
+             <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Haseeb Zahid"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input

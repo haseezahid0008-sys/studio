@@ -60,9 +60,13 @@ export const getSales = async (): Promise<Sale[]> => {
     });
 };
 
-export const addSale = async (sale: Omit<Sale, 'id'>) => {
+export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName'>, salesmanId: string) => {
+    const salesmanDoc = await getUser(salesmanId);
+    const salesmanName = salesmanDoc?.name || 'N/A';
+
     const saleWithTimestamp = {
         ...sale,
+        salesmanName,
         date: Timestamp.fromDate(new Date(sale.date))
     }
   return await addDoc(salesCollection, saleWithTimestamp);
@@ -92,12 +96,12 @@ export const addExpense = async (expense: Omit<Expense, 'id'>) => {
   return await addDoc(expensesCollection, expenseWithTimestamp);
 };
 
-// Salesmen functions
-const salesmenCollection = collection(db, 'salesmen');
-
-export const getSalesmen = async (): Promise<Salesman[]> => {
-    const snapshot = await getDocs(salesmenCollection);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Salesman));
+// Salesmen functions (now replaced by users with 'Salesman' role)
+export const getSalesmen = async (): Promise<AppUser[]> => {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("role", "==", "Salesman"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as AppUser));
 };
 
 // User functions
@@ -110,7 +114,8 @@ export const getUser = async (uid: string): Promise<AppUser | null> => {
     const userRef = doc(db, 'users', uid);
     const docSnap = await getDoc(userRef);
     if (docSnap.exists()) {
-        return docSnap.data() as AppUser;
+        const data = docSnap.data();
+        return { ...data, uid: docSnap.id } as AppUser;
     }
     return null;
 }

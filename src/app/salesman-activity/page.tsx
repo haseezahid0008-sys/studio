@@ -21,10 +21,10 @@ import { Badge } from "@/components/ui/badge"
 import { getSalesmen, getSales, getAppSettings, getCurrencySymbol } from "@/lib/firestore"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import PageHeader from "@/components/page-header"
-import type { Salesman, Sale, AppSettings } from "@/lib/types";
+import type { AppUser, Sale, AppSettings } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 
-type SalesmanData = Salesman & {
+type SalesmanData = AppUser & {
   totalRevenue: number;
   totalSales: number;
   status: string;
@@ -107,7 +107,7 @@ export default function SalesmanActivityPage() {
             </TableHeader>
             <TableBody>
               {salesmanData.map((sm) => (
-                <TableRow key={sm.id}>
+                <TableRow key={sm.uid}>
                   <TableCell>
                     <div className="flex items-center gap-4">
                       <Avatar className="hidden h-9 w-9 sm:flex">

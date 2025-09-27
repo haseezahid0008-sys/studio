@@ -23,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Trash2, Loader2 } from "lucide-react"
 import { getProducts, getSalesmen, addSale, getUser } from "@/lib/firestore"
-import type { Product, Salesman, AppUser } from "@/lib/types"
+import type { Product, AppUser } from "@/lib/types"
 import PageHeader from "@/components/page-header"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
@@ -41,7 +41,7 @@ export default function NewSalePage() {
   const { user } = useAuth();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [salesmen, setSalesmen] = useState<Salesman[]>([]);
+  const [salesmen, setSalesmen] = useState<AppUser[]>([]);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -74,8 +74,8 @@ export default function NewSalePage() {
         setSalesmen(salesmenData);
         setAppUser(currentUserData);
         
-        if (currentUserData?.role === 'Salesman') {
-            setSalesmanId(currentUserData.uid);
+        if (currentUserData?.role === 'Salesman' && user) {
+            setSalesmanId(user.uid);
         }
 
       } catch (err) {
@@ -137,14 +137,8 @@ export default function NewSalePage() {
       setIsSaving(true);
       setError(null);
 
-      const salesmanName = appUser?.role === 'Salesman' 
-        ? user?.displayName 
-        : salesmen.find(s => s.id === salesmanId)?.name;
-
-
-      const newSale = {
+      const saleData = {
           date: saleDate,
-          salesmanName: salesmanName || 'N/A',
           customerName,
           items: items.map(i => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice })),
           discount,
@@ -153,7 +147,7 @@ export default function NewSalePage() {
       };
 
       try {
-          await addSale(newSale);
+          await addSale(saleData, salesmanId);
           toast({
               title: "Success",
               description: "Sale recorded successfully.",
@@ -198,7 +192,7 @@ export default function NewSalePage() {
                       </SelectTrigger>
                       <SelectContent>
                         {salesmen.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
+                          <SelectItem key={s.uid} value={s.uid}>
                             {s.name}
                           </SelectItem>
                         ))}

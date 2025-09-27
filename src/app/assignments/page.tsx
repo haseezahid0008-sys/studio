@@ -26,12 +26,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getSalesmen, addAssignment, getAssignments } from "@/lib/firestore";
-import type { Salesman, Assignment } from "@/lib/types";
+import type { AppUser, Assignment } from "@/lib/types";
 
 export default function AssignmentsPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [salesmen, setSalesmen] = useState<Salesman[]>([]);
+    const [salesmen, setSalesmen] = useState<AppUser[]>([]);
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     
     const [salesmanId, setSalesmanId] = useState('');
@@ -72,7 +72,7 @@ export default function AssignmentsPage() {
         setIsSaving(true);
         setError(null);
 
-        const salesman = salesmen.find(s => s.id === salesmanId);
+        const salesman = salesmen.find(s => s.uid === salesmanId);
 
         try {
             await addAssignment({
@@ -131,7 +131,7 @@ export default function AssignmentsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {salesmen.map(s => (
-                                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                        <SelectItem key={s.uid} value={s.uid}>{s.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

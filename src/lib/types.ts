@@ -12,11 +12,6 @@ export type Product = {
   expiryDate?: string;
 };
 
-export type Salesman = {
-  id: string;
-  name: string;
-};
-
 export type SaleItem = {
   productId: string;
   quantity: number;
@@ -48,6 +43,7 @@ export type Role = (typeof ROLES)[number];
 export type AppUser = {
   uid: string;
   email: string | null;
+  name: string;
   createdAt: Date;
   role?: Role;
 }
