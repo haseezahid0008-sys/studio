@@ -1,4 +1,5 @@
 
+
 export type Product = {
   id: string;
   name: string;
@@ -60,4 +61,14 @@ export type AppSettings = {
     favicon: string;
     currency: 'pkr' | 'usd' | 'eur';
     signupVisible: boolean;
+}
+
+export type Assignment = {
+    id: string;
+    salesmanId: string;
+    salesmanName: string;
+    todayLocation: string;
+    tomorrowLocation: string;
+    itemsToTake?: string;
+    createdAt: string;
 }

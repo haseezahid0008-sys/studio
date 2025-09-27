@@ -48,6 +48,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             uid: user.uid,
             email: user.email,
             createdAt: new Date(),
+            role: 'Worker', // Default role for new signups
         });
     }
     return userCredential;

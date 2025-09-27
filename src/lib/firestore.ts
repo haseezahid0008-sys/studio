@@ -12,7 +12,7 @@ import {
   Timestamp,
   setDoc,
 } from 'firebase/firestore';
-import type { Product, Sale, Expense, Salesman, AppUser, AppSettings } from './types';
+import type { Product, Sale, Expense, Salesman, AppUser, AppSettings, Assignment } from './types';
 
 // Product functions
 const productsCollection = collection(db, 'products');
@@ -106,6 +106,15 @@ export const addUser = async (user: AppUser) => {
     return await setDoc(userRef, user, { merge: true });
 }
 
+export const getUser = async (uid: string): Promise<AppUser | null> => {
+    const userRef = doc(db, 'users', uid);
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as AppUser;
+    }
+    return null;
+}
+
 
 // App Settings functions
 const settingsDocRef = doc(db, 'settings', 'appSettings');
@@ -150,3 +159,26 @@ export const getCurrencySymbol = (currencyCode?: string): string => {
         default: return '$';
     }
 }
+
+// Assignments functions
+const assignmentsCollection = collection(db, 'assignments');
+
+export const getAssignments = async (): Promise<Assignment[]> => {
+    const snapshot = await getDocs(assignmentsCollection);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            id: doc.id, 
+            ...data,
+            createdAt: (data.createdAt as Timestamp)?.toDate().toISOString()
+        } as Assignment;
+    });
+};
+
+export const addAssignment = async (assignment: Omit<Assignment, 'id' | 'createdAt'>) => {
+    const assignmentWithTimestamp = {
+        ...assignment,
+        createdAt: Timestamp.now()
+    }
+  return await addDoc(assignmentsCollection, assignmentWithTimestamp);
+};

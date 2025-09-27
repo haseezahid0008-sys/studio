@@ -12,6 +12,7 @@ import {
   BrainCircuit,
   Coins,
   Settings,
+  ClipboardList,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -34,6 +35,7 @@ export const navItems = [
   { href: '/sales', icon: ShoppingCart, label: 'Sales' },
   { href: '/inventory', icon: Package, label: 'Inventory' },
   { href: '/expenses', icon: Coins, label: 'Expenses' },
+  { href: '/assignments', icon: ClipboardList, label: 'Assignments' },
   { href: '/salesman-activity', icon: Users2, label: 'Salesman Activity' },
   { href: '/reports', icon: FileText, label: 'Reports' },
   { href: '/analysis', icon: BrainCircuit, label: 'P/L Analysis' },

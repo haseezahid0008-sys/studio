@@ -10,6 +10,8 @@ import {
   Package,
   AlertCircle,
   Loader2,
+  MapPin,
+  ClipboardList,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -29,72 +31,122 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Sale, Product, Expense, AppSettings } from '@/lib/types';
-import { getSales, getProducts, getExpenses, getAppSettings, getCurrencySymbol } from '@/lib/firestore';
+import type { Sale, Product, Expense, AppSettings, AppUser, Assignment } from '@/lib/types';
+import { getSales, getProducts, getExpenses, getAppSettings, getCurrencySymbol, getUser, getAssignments } from '@/lib/firestore';
+import { useAuth } from '@/hooks/use-auth';
 
-export default function Dashboard() {
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function SalesmanDashboard({ assignments }: { assignments: Assignment[] }) {
+    const today = new Date().toISOString().split('T')[0];
+    const todaysAssignment = assignments.find(a => new Date(a.createdAt).toISOString().split('T')[0] === today);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const [salesData, productsData, expensesData, appSettings] = await Promise.all([
-          getSales(),
-          getProducts(),
-          getExpenses(),
-          getAppSettings(),
-        ]);
-        setSales(salesData);
-        setProducts(productsData);
-        setExpenses(expensesData);
-        setSettings(appSettings);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to fetch dashboard data. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const currencySymbol = getCurrencySymbol(settings?.currency);
-
-  const totalRevenue = sales.reduce((acc, sale) => acc + sale.total, 0);
-  const totalSalesCount = sales.length;
-  const totalExpenses = expenses.reduce((acc, expense) => acc + expense.amount, 0);
-  const pendingPayments = sales.reduce(
-    (acc, sale) => acc + (sale.total - sale.amountPaid),
-    0
+  return (
+    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <h1 className="text-3xl font-bold font-headline">Your Assignments</h1>
+        <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline"><MapPin className="h-6 w-6"/> Today's Assignment</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {todaysAssignment ? (
+                        <div className="space-y-4">
+                            <div>
+                                <p className="font-semibold text-lg">{todaysAssignment.todayLocation}</p>
+                                <p className="text-muted-foreground">Your destination for today.</p>
+                            </div>
+                            {todaysAssignment.itemsToTake && (
+                                <div>
+                                    <h3 className="font-semibold flex items-center gap-2"><ClipboardList className="h-5 w-5"/> Items to Take</h3>
+                                    <p className="text-muted-foreground whitespace-pre-wrap">{todaysAssignment.itemsToTake}</p>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground">No assignment for today.</p>
+                    )}
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline"><MapPin className="h-6 w-6"/> Tomorrow's Assignment</CardTitle>
+                </CardHeader>
+                 <CardContent>
+                    {todaysAssignment ? (
+                        <div>
+                             <p className="font-semibold text-lg">{todaysAssignment.tomorrowLocation}</p>
+                             <p className="text-muted-foreground">Your destination for tomorrow.</p>
+                        </div>
+                    ) : (
+                         <p className="text-muted-foreground">Tomorrow's assignment is not yet available.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    </div>
   );
+}
 
-  const stockAlerts = products.filter(
-    (p) => p.stock < p.reorderLevel
-  );
 
-  const recentSales = sales.slice(0, 5);
+function AdminDashboard() {
+    const [sales, setSales] = useState<Sale[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [settings, setSettings] = useState<AppSettings | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-[calc(100vh-8rem)]">
-        <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
-      </div>
+    useEffect(() => {
+        const fetchData = async () => {
+        try {
+            setIsLoading(true);
+            const [salesData, productsData, expensesData, appSettings] = await Promise.all([
+            getSales(),
+            getProducts(),
+            getExpenses(),
+            getAppSettings(),
+            ]);
+            setSales(salesData);
+            setProducts(productsData);
+            setExpenses(expensesData);
+            setSettings(appSettings);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to fetch dashboard data. Please try again later.");
+        } finally {
+            setIsLoading(false);
+        }
+        };
+        fetchData();
+    }, []);
+
+    if (isLoading) {
+        return (
+          <div className="flex justify-center items-center h-[calc(100vh-8rem)]">
+            <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
+          </div>
+        );
+    }
+    
+    if (error) {
+        return (
+          <div className="flex justify-center items-center h-[calc(100vh-8rem)]">
+            <p className="text-destructive">{error}</p>
+          </div>
+        );
+    }
+
+    const currencySymbol = getCurrencySymbol(settings?.currency);
+    const totalRevenue = sales.reduce((acc, sale) => acc + sale.total, 0);
+    const totalSalesCount = sales.length;
+    const totalExpenses = expenses.reduce((acc, expense) => acc + expense.amount, 0);
+    const pendingPayments = sales.reduce(
+        (acc, sale) => acc + (sale.total - sale.amountPaid),
+        0
     );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-[calc(100vh-8rem)]">
-        <p className="text-destructive">{error}</p>
-      </div>
+    const stockAlerts = products.filter(
+        (p) => p.stock < p.reorderLevel
     );
-  }
+    const recentSales = sales.slice(0, 5);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -254,4 +306,59 @@ export default function Dashboard() {
       </main>
     </div>
   );
+}
+
+export default function Dashboard() {
+  const { user } = useAuth();
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchUserData = async () => {
+        try {
+            setIsLoading(true);
+            const userData = await getUser(user.uid);
+            setAppUser(userData);
+
+            if (userData?.role === 'Salesman') {
+                const allAssignments = await getAssignments();
+                const salesmanAssignments = allAssignments.filter(a => a.salesmanId === user.uid);
+                setAssignments(salesmanAssignments);
+            }
+
+        } catch (err) {
+            console.error(err);
+            setError("Failed to fetch user data.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchUserData();
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-8rem)]">
+        <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-8rem)]">
+        <p className="text-destructive">{error}</p>
+      </div>
+    );
+  }
+
+  if (appUser?.role === 'Salesman') {
+      return <SalesmanDashboard assignments={assignments} />;
+  }
+
+  return <AdminDashboard />;
 }
