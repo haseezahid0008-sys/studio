@@ -1,3 +1,4 @@
+
 export type Product = {
   id: string;
   name: string;
@@ -40,10 +41,14 @@ export type Expense = {
     notes?: string;
 }
 
+export const ROLES = ['Admin', 'Manager', 'Salesman', 'Worker', 'Cashier'] as const;
+export type Role = (typeof ROLES)[number];
+
 export type AppUser = {
   uid: string;
   email: string | null;
   createdAt: Date;
+  role?: Role;
 }
 
 export type AppSettings = {
