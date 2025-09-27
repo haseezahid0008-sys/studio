@@ -12,7 +12,7 @@ import {
   Timestamp,
   setDoc,
 } from 'firebase/firestore';
-import type { Product, Sale, Expense, Salesman, AppUser, AppSettings, Assignment } from './types';
+import type { Product, Sale, Expense, Salesman, AppUser, AppSettings, Assignment, WorkerTask } from './types';
 
 // Product functions
 const productsCollection = collection(db, 'products');
@@ -107,6 +107,14 @@ export const getSalesmen = async (): Promise<AppUser[]> => {
     return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as AppUser));
 };
 
+// Worker functions
+export const getWorkers = async (): Promise<AppUser[]> => {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("role", "==", "Worker"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as AppUser));
+}
+
 // User functions
 export const addUser = async (user: AppUser) => {
     const userRef = doc(db, 'users', user.uid);
@@ -189,4 +197,27 @@ export const addAssignment = async (assignment: Omit<Assignment, 'id' | 'created
         createdAt: Timestamp.now()
     }
   return await addDoc(assignmentsCollection, assignmentWithTimestamp);
+};
+
+// Worker Task functions
+const workerTasksCollection = collection(db, 'workerTasks');
+
+export const getWorkerTasks = async (): Promise<WorkerTask[]> => {
+    const snapshot = await getDocs(query(workerTasksCollection));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp)?.toDate().toISOString()
+        } as WorkerTask;
+    });
+};
+
+export const addWorkerTask = async (task: Omit<WorkerTask, 'id' | 'createdAt'>) => {
+    const taskWithTimestamp = {
+        ...task,
+        createdAt: Timestamp.now()
+    }
+    return await addDoc(workerTasksCollection, taskWithTimestamp);
 };

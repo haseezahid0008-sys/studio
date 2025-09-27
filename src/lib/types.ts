@@ -71,3 +71,12 @@ export type Assignment = {
     itemsToTake?: string;
     createdAt: string;
 }
+
+export type WorkerTask = {
+    id: string;
+    workerId: string;
+    workerName: string;
+    taskDescription: string;
+    createdAt: string;
+}
+

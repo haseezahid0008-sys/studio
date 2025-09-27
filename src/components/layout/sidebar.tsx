@@ -13,6 +13,7 @@ import {
   Coins,
   Settings,
   ClipboardList,
+  Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -36,6 +37,7 @@ export const allNavItems = [
   { href: '/inventory', icon: Package, label: 'Inventory', roles: ['Admin', 'Manager', 'Worker'] },
   { href: '/expenses', icon: Coins, label: 'Expenses', roles: ['Admin', 'Manager', 'Cashier'] },
   { href: '/assignments', icon: ClipboardList, label: 'Salesman Plan', roles: ['Admin', 'Manager'] },
+  { href: '/worker-tasks', icon: Wrench, label: 'Worker Tasks', roles: ['Admin', 'Manager'] },
   { href: '/salesman-activity', icon: Users2, label: 'Salesman Activity', roles: ['Admin', 'Manager'] },
   { href: '/reports', icon: FileText, label: 'Reports', roles: ['Admin', 'Manager'] },
   { href: '/analysis', icon: BrainCircuit, label: 'P/L Analysis', roles: ['Admin', 'Manager'] },

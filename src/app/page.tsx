@@ -12,6 +12,7 @@ import {
   Loader2,
   MapPin,
   ClipboardList,
+  Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -31,8 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Sale, Product, Expense, AppSettings, AppUser, Assignment } from '@/lib/types';
-import { getSales, getProducts, getExpenses, getAppSettings, getCurrencySymbol, getUser, getAssignments } from '@/lib/firestore';
+import type { Sale, Product, Expense, AppSettings, AppUser, Assignment, WorkerTask } from '@/lib/types';
+import { getSales, getProducts, getExpenses, getAppSettings, getCurrencySymbol, getUser, getAssignments, getWorkerTasks } from '@/lib/firestore';
 import { useAuth } from '@/hooks/use-auth';
 
 function SalesmanDashboard({ assignments }: { assignments: Assignment[] }) {
@@ -63,6 +64,34 @@ function SalesmanDashboard({ assignments }: { assignments: Assignment[] }) {
                         </div>
                     ) : (
                         <p className="text-muted-foreground">No plan assigned for today.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    </div>
+  );
+}
+
+function WorkerDashboard({ tasks }: { tasks: WorkerTask[] }) {
+    const today = new Date().toISOString().split('T')[0];
+    const todaysTask = tasks.find(t => new Date(t.createdAt).toISOString().split('T')[0] === today);
+
+  return (
+    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <h1 className="text-3xl font-bold font-headline">Your Daily Task</h1>
+        <div className="grid gap-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline"><Wrench className="h-6 w-6"/> Today's Task</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {todaysTask ? (
+                        <div className="space-y-2">
+                           <p className="font-semibold text-lg">{todaysTask.taskDescription}</p>
+                           <p className="text-muted-foreground">This is your assigned task for today.</p>
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground">No task assigned for today.</p>
                     )}
                 </CardContent>
             </Card>
@@ -297,6 +326,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [workerTasks, setWorkerTasks] = useState<WorkerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -313,6 +343,10 @@ export default function Dashboard() {
                 const allAssignments = await getAssignments();
                 const salesmanAssignments = allAssignments.filter(a => a.salesmanId === user.uid);
                 setAssignments(salesmanAssignments);
+            } else if (userData?.role === 'Worker') {
+                const allTasks = await getWorkerTasks();
+                const userTasks = allTasks.filter(t => t.workerId === user.uid);
+                setWorkerTasks(userTasks);
             }
 
         } catch (err) {
@@ -343,6 +377,10 @@ export default function Dashboard() {
 
   if (appUser?.role === 'Salesman') {
       return <SalesmanDashboard assignments={assignments} />;
+  }
+  
+  if (appUser?.role === 'Worker') {
+      return <WorkerDashboard tasks={workerTasks} />;
   }
 
   return <AdminDashboard />;
