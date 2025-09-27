@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from "react";
@@ -166,7 +167,7 @@ export default function SalesmanActivityPage() {
                                         {sm.assignments.slice(0, 5).map(assignment => (
                                         <TableRow key={assignment.id}>
                                             <TableCell>{new Date(assignment.createdAt).toLocaleDateString()}</TableCell>
-                                            <TableCell>{assignment.todayLocation}</TableCell>
+                                            <TableCell>{assignment.location}</TableCell>
                                             <TableCell>
                                                 <Badge variant={assignment.status === 'Visited' ? 'default' : 'secondary'}>{assignment.status}</Badge>
                                             </TableCell>

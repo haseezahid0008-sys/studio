@@ -152,7 +152,7 @@ function SalesmanDashboard({ assignments, userId }: { assignments: Assignment[],
 function WorkerDashboard({ tasks, userId }: { tasks: WorkerTask[], userId: string }) {
     const { toast } = useToast();
     const today = new Date().toISOString().split('T')[0];
-    const todaysTask = tasks.find(t => new Date(t.createdAt).toISOString().split('T')[0] === today);
+    const todaysTask = tasks.find(t => new Date(t.createdAt).toISOString().split('T')[0] === today && t.status !== 'Completed' && t.status !== 'Expired');
     
     const [progressNotes, setProgressNotes] = useState(todaysTask?.progressNotes || "");
     const [status, setStatus] = useState(todaysTask?.status || "Pending");
@@ -165,14 +165,24 @@ function WorkerDashboard({ tasks, userId }: { tasks: WorkerTask[], userId: strin
             setError("Please fill in the progress notes.");
             return;
         }
+
+        let finalStatus = status;
+        if (progressNotes.toLowerCase().includes('done')) {
+            finalStatus = 'Completed';
+        }
+
         setIsSaving(true);
         setError(null);
         try {
-            await updateWorkerTask(todaysTask.id, { status, progressNotes });
+            await updateWorkerTask(todaysTask.id, { status: finalStatus, progressNotes });
             toast({
                 title: "Success",
                 description: "Task status updated successfully.",
             });
+            if (finalStatus === 'Completed') {
+                // Optionally refresh or hide the task immediately from the UI
+                 window.location.reload();
+            }
         } catch (error) {
             console.error("Failed to update task status:", error);
             toast({
@@ -215,7 +225,7 @@ function WorkerDashboard({ tasks, userId }: { tasks: WorkerTask[], userId: strin
                             </div>
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="notes">Progress Notes (e.g., '40 units packed')</Label>
+                            <Label htmlFor="notes">Progress Notes (e.g., '40 units packed' or 'done')</Label>
                             <Textarea id="notes" placeholder="e.g., Packed 50 units." value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)} disabled={isSaving} required/>
                          </div>
                          {error && <p className="text-sm text-destructive">{error}</p>}
