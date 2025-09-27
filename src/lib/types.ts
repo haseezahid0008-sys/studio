@@ -45,3 +45,14 @@ export type AppUser = {
   email: string | null;
   createdAt: Date;
 }
+
+export type AppSettings = {
+    appName: string;
+    logoLight: string;
+    logoDark: string;
+    authLogoLight: string;
+    authLogoDark: string;
+    favicon: string;
+    currency: 'pkr' | 'usd' | 'eur';
+    signupVisible: boolean;
+}

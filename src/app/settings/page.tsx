@@ -1,6 +1,7 @@
 
 'use client'
 
+import { useEffect, useState } from "react";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,9 +23,59 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { getAppSettings, updateAppSettings } from "@/lib/firestore";
+import type { AppSettings } from "@/lib/types";
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [settings, setSettings] = useState<Partial<AppSettings>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      setIsLoading(true);
+      const appSettings = await getAppSettings();
+      setSettings(appSettings);
+      setIsLoading(false);
+    }
+    fetchSettings();
+  }, []);
+
+  const handleSettingsChange = (key: keyof AppSettings, value: any) => {
+    setSettings(prev => ({...prev, [key]: value}));
+  }
+
+  const handleSave = async (section: string) => {
+    setIsSaving(true);
+    try {
+      await updateAppSettings(settings);
+      toast({
+        title: "Success",
+        description: `${section} settings saved successfully.`,
+      })
+    } catch (error) {
+      console.error(`Failed to save ${section} settings`, error);
+      toast({
+        title: "Error",
+        description: `Failed to save ${section} settings. Please try again.`,
+        variant: "destructive"
+      })
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-8">
@@ -51,7 +102,7 @@ export default function SettingsPage() {
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button>Save</Button>
+          <Button disabled>Save</Button>
         </CardFooter>
       </Card>
 
@@ -77,7 +128,7 @@ export default function SettingsPage() {
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button>Update Password</Button>
+          <Button disabled>Update Password</Button>
         </CardFooter>
       </Card>
 
@@ -112,34 +163,34 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="app-name">Application Name</Label>
-            <Input id="app-name" defaultValue="GLOW" />
+            <Label htmlFor="appName">Application Name</Label>
+            <Input id="appName" value={settings.appName || ''} onChange={e => handleSettingsChange('appName', e.target.value)} disabled={isSaving}/>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="logo-light">Sidebar Logo URL (Light Mode)</Label>
-            <Input id="logo-light" defaultValue="https://iili.io/KYqQC1R.png" />
+            <Label htmlFor="logoLight">Sidebar Logo URL (Light Mode)</Label>
+            <Input id="logoLight" value={settings.logoLight || ''} onChange={e => handleSettingsChange('logoLight', e.target.value)} disabled={isSaving}/>
              <p className="text-sm text-muted-foreground">Your logo will be displayed in the sidebar. Recommended size: 32x32 pixels.</p>
           </div>
            <div className="space-y-2">
-            <Label htmlFor="logo-dark">Sidebar Logo URL (Dark Mode)</Label>
-            <Input id="logo-dark" defaultValue="https://iili.io/KYkW0NV.png" />
+            <Label htmlFor="logoDark">Sidebar Logo URL (Dark Mode)</Label>
+            <Input id="logoDark" value={settings.logoDark || ''} onChange={e => handleSettingsChange('logoDark', e.target.value)} disabled={isSaving}/>
           </div>
            <div className="space-y-2">
-            <Label htmlFor="auth-logo-light">Auth Page Logo URL (Light Mode)</Label>
-            <Input id="auth-logo-light" defaultValue="https://iili.io/KYqQC1R.png" />
+            <Label htmlFor="authLogoLight">Auth Page Logo URL (Light Mode)</Label>
+            <Input id="authLogoLight" value={settings.authLogoLight || ''} onChange={e => handleSettingsChange('authLogoLight', e.target.value)} disabled={isSaving}/>
           </div>
            <div className="space-y-2">
-            <Label htmlFor="auth-logo-dark">Auth Page Logo URL (Dark Mode)</Label>
-            <Input id="auth-logo-dark" defaultValue="https://iili.io/KYkW0NV.png" />
+            <Label htmlFor="authLogoDark">Auth Page Logo URL (Dark Mode)</Label>
+            <Input id="authLogoDark" value={settings.authLogoDark || ''} onChange={e => handleSettingsChange('authLogoDark', e.target.value)} disabled={isSaving}/>
           </div>
           <div className="space-y-2">
             <Label htmlFor="favicon">Favicon URL</Label>
-            <Input id="favicon" defaultValue="https://iili.io/KYqQC1R.png" />
+            <Input id="favicon" value={settings.favicon || ''} onChange={e => handleSettingsChange('favicon', e.target.value)} disabled={isSaving}/>
             <p className="text-sm text-muted-foreground">The icon that appears in the browser tab.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="currency">Currency</Label>
-            <Select defaultValue="pkr">
+            <Select value={settings.currency || 'pkr'} onValueChange={value => handleSettingsChange('currency', value)} disabled={isSaving}>
               <SelectTrigger className="w-[280px]">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
@@ -153,7 +204,10 @@ export default function SettingsPage() {
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button>Save Branding</Button>
+          <Button onClick={() => handleSave("Branding")} disabled={isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Branding
+          </Button>
         </CardFooter>
       </Card>
       
@@ -168,11 +222,19 @@ export default function SettingsPage() {
                     <Label htmlFor="signup-visibility" className="font-medium">Sign Up Page Visibility</Label>
                     <p className="text-sm text-muted-foreground">Control whether new users can create an account.</p>
                 </div>
-                <Switch id="signup-visibility" defaultChecked />
+                <Switch 
+                  id="signup-visibility" 
+                  checked={settings.signupVisible} 
+                  onCheckedChange={value => handleSettingsChange('signupVisible', value)} 
+                  disabled={isSaving}
+                />
             </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-            <Button>Save Security Settings</Button>
+            <Button onClick={() => handleSave("Security")} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Security Settings
+            </Button>
         </CardFooter>
       </Card>
       
@@ -182,7 +244,7 @@ export default function SettingsPage() {
             <CardDescription>Permanently delete application data. This is useful for clearing test data.</CardDescription>
         </CardHeader>
         <CardContent>
-            <Button variant="destructive">Reset Application Data</Button>
+            <Button variant="destructive" disabled>Reset Application Data</Button>
         </CardContent>
       </Card>
 
@@ -199,18 +261,18 @@ export default function SettingsPage() {
                     <Label htmlFor="low-stock-alerts" className="font-medium">Low Stock Alerts</Label>
                     <p className="text-sm text-muted-foreground">Receive an email when stock is low.</p>
                 </div>
-                <Switch id="low-stock-alerts" />
+                <Switch id="low-stock-alerts" disabled/>
             </div>
              <div className="flex items-center justify-between">
                 <div>
                     <Label htmlFor="weekly-summary" className="font-medium">Weekly Summary</Label>
                     <p className="text-sm text-muted-foreground">Get a weekly summary of sales and expenses.</p>
                 </div>
-                <Switch id="weekly-summary" defaultChecked />
+                <Switch id="weekly-summary" defaultChecked disabled/>
             </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button>Save Preferences</Button>
+          <Button disabled>Save Preferences</Button>
         </CardFooter>
       </Card>
     </div>

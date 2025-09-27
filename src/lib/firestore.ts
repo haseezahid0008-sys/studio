@@ -12,7 +12,7 @@ import {
   Timestamp,
   setDoc,
 } from 'firebase/firestore';
-import type { Product, Sale, Expense, Salesman, AppUser } from './types';
+import type { Product, Sale, Expense, Salesman, AppUser, AppSettings } from './types';
 
 // Product functions
 const productsCollection = collection(db, 'products');
@@ -105,3 +105,29 @@ export const addUser = async (user: AppUser) => {
     const userRef = doc(db, 'users', user.uid);
     return await setDoc(userRef, user);
 }
+
+
+// App Settings functions
+const settingsDocRef = doc(db, 'settings', 'appSettings');
+
+export const getAppSettings = async (): Promise<AppSettings> => {
+    const docSnap = await getDoc(settingsDocRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as AppSettings;
+    }
+    // Return default settings if they don't exist
+    return {
+        appName: 'GLOW',
+        logoLight: 'https://iili.io/KYqQC1R.png',
+        logoDark: 'https://iili.io/KYkW0NV.png',
+        authLogoLight: 'https://iili.io/KYqQC1R.png',
+        authLogoDark: 'https://iili.io/KYkW0NV.png',
+        favicon: 'https://iili.io/KYqQC1R.png',
+        currency: 'pkr',
+        signupVisible: true,
+    };
+};
+
+export const updateAppSettings = async (settings: Partial<AppSettings>) => {
+    return await setDoc(settingsDocRef, settings, { merge: true });
+};
