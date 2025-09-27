@@ -25,8 +25,8 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getAppSettings, updateAppSettings } from "@/lib/firestore";
-import type { AppSettings } from "@/lib/types";
+import { getAppSettings, updateAppSettings, getUser } from "@/lib/firestore";
+import type { AppSettings, AppUser } from "@/lib/types";
 import { useTheme } from "next-themes";
 import { updateProfile } from "firebase/auth";
 
@@ -35,6 +35,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<Partial<AppSettings>>({});
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   
   const [currentPassword, setCurrentPassword] = useState('');
@@ -54,10 +55,14 @@ export default function SettingsPage() {
       setIsLoading(true);
       const appSettings = await getAppSettings();
       setSettings(appSettings);
+      if (user) {
+        const userData = await getUser(user.uid);
+        setAppUser(userData);
+      }
       setIsLoading(false);
     }
     fetchSettings();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (user?.displayName) {
@@ -162,6 +167,7 @@ export default function SettingsPage() {
     }
   }
 
+  const canManageSettings = appUser?.role === 'Admin' || appUser?.role === 'Manager';
 
   if (isLoading) {
     return (
@@ -232,150 +238,156 @@ export default function SettingsPage() {
           </Button>
         </CardFooter>
       </Card>
+      
+      {canManageSettings && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-headline">Appearance</CardTitle>
+              <CardDescription>
+                Customize the look and feel of your application.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2">
+                <Label htmlFor="theme">Theme</Label>
+                 <Select value={theme} onValueChange={setTheme}>
+                  <SelectTrigger className="w-[280px]">
+                    <SelectValue placeholder="Select a theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-headline">Branding &amp; Localization</CardTitle>
+              <CardDescription>Manage your application's branding and currency.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="appName">Application Name</Label>
+                <Input id="appName" value={settings.appName || ''} onChange={e => handleSettingsChange('appName', e.target.value)} disabled={isSavingBranding}/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="logoLight">Sidebar Logo URL (Light Mode)</Label>
+                <Input id="logoLight" value={settings.logoLight || ''} onChange={e => handleSettingsChange('logoLight', e.target.value)} disabled={isSavingBranding}/>
+                 <p className="text-sm text-muted-foreground">Your logo will be displayed in the sidebar. Recommended size: 32x32 pixels.</p>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="logoDark">Sidebar Logo URL (Dark Mode)</Label>
+                <Input id="logoDark" value={settings.logoDark || ''} onChange={e => handleSettingsChange('logoDark', e.target.value)} disabled={isSavingBranding}/>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="authLogoLight">Auth Page Logo URL (Light Mode)</Label>
+                <Input id="authLogoLight" value={settings.authLogoLight || ''} onChange={e => handleSettingsChange('authLogoLight', e.target.value)} disabled={isSavingBranding}/>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="authLogoDark">Auth Page Logo URL (Dark Mode)</Label>
+                <Input id="authLogoDark" value={settings.authLogoDark || ''} onChange={e => handleSettingsChange('authLogoDark', e.target.value)} disabled={isSavingBranding}/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="favicon">Favicon URL</Label>
+                <Input id="favicon" value={settings.favicon || ''} onChange={e => handleSettingsChange('favicon', e.target.value)} disabled={isSavingBranding}/>
+                <p className="text-sm text-muted-foreground">The icon that appears in the browser tab.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Select value={settings.currency || 'pkr'} onValueChange={value => handleSettingsChange('currency', value)} disabled={isSavingBranding}>
+                  <SelectTrigger className="w-[280px]">
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pkr">Pakistani Rupee (₨)</SelectItem>
+                    <SelectItem value="usd">United States Dollar ($)</SelectItem>
+                    <SelectItem value="eur">Euro (€)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">Choose the currency to be used across the application.</p>
+              </div>
+            </CardContent>
+            <CardFooter className="border-t px-6 py-4">
+              <Button onClick={handleSaveBranding} disabled={isSavingBranding}>
+                {isSavingBranding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Branding
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Security</CardTitle>
+                <CardDescription>Manage application access and security settings.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <Label htmlFor="signup-visibility" className="font-medium">Sign Up Page Visibility</Label>
+                        <p className="text-sm text-muted-foreground">Control whether new users can create an account.</p>
+                    </div>
+                    <Switch 
+                      id="signup-visibility" 
+                      checked={settings.signupVisible} 
+                      onCheckedChange={value => handleSettingsChange('signupVisible', value)} 
+                      disabled={isSavingSecurity}
+                    />
+                </div>
+            </CardContent>
+            <CardFooter className="border-t px-6 py-4">
+                <Button onClick={handleSaveSecurity} disabled={isSavingSecurity}>
+                  {isSavingSecurity && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Security Settings
+                </Button>
+            </CardFooter>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Data Management</CardTitle>
+                <CardDescription>Permanently delete application data. This is useful for clearing test data.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button variant="destructive" disabled>Reset Application Data</Button>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Appearance</CardTitle>
-          <CardDescription>
-            Customize the look and feel of your application.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-2">
-            <Label htmlFor="theme">Theme</Label>
-             <Select value={theme} onValueChange={setTheme}>
-              <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a theme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="system">System</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Branding &amp; Localization</CardTitle>
-          <CardDescription>Manage your application's branding and currency.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="appName">Application Name</Label>
-            <Input id="appName" value={settings.appName || ''} onChange={e => handleSettingsChange('appName', e.target.value)} disabled={isSavingBranding}/>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="logoLight">Sidebar Logo URL (Light Mode)</Label>
-            <Input id="logoLight" value={settings.logoLight || ''} onChange={e => handleSettingsChange('logoLight', e.target.value)} disabled={isSavingBranding}/>
-             <p className="text-sm text-muted-foreground">Your logo will be displayed in the sidebar. Recommended size: 32x32 pixels.</p>
-          </div>
-           <div className="space-y-2">
-            <Label htmlFor="logoDark">Sidebar Logo URL (Dark Mode)</Label>
-            <Input id="logoDark" value={settings.logoDark || ''} onChange={e => handleSettingsChange('logoDark', e.target.value)} disabled={isSavingBranding}/>
-          </div>
-           <div className="space-y-2">
-            <Label htmlFor="authLogoLight">Auth Page Logo URL (Light Mode)</Label>
-            <Input id="authLogoLight" value={settings.authLogoLight || ''} onChange={e => handleSettingsChange('authLogoLight', e.target.value)} disabled={isSavingBranding}/>
-          </div>
-           <div className="space-y-2">
-            <Label htmlFor="authLogoDark">Auth Page Logo URL (Dark Mode)</Label>
-            <Input id="authLogoDark" value={settings.authLogoDark || ''} onChange={e => handleSettingsChange('authLogoDark', e.target.value)} disabled={isSavingBranding}/>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="favicon">Favicon URL</Label>
-            <Input id="favicon" value={settings.favicon || ''} onChange={e => handleSettingsChange('favicon', e.target.value)} disabled={isSavingBranding}/>
-            <p className="text-sm text-muted-foreground">The icon that appears in the browser tab.</p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
-            <Select value={settings.currency || 'pkr'} onValueChange={value => handleSettingsChange('currency', value)} disabled={isSavingBranding}>
-              <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select currency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pkr">Pakistani Rupee (₨)</SelectItem>
-                <SelectItem value="usd">United States Dollar ($)</SelectItem>
-                <SelectItem value="eur">Euro (€)</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground">Choose the currency to be used across the application.</p>
-          </div>
-        </CardContent>
-        <CardFooter className="border-t px-6 py-4">
-          <Button onClick={handleSaveBranding} disabled={isSavingBranding}>
-            {isSavingBranding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Branding
-          </Button>
-        </CardFooter>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-            <CardTitle className="font-headline">Security</CardTitle>
-            <CardDescription>Manage application access and security settings.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="flex items-center justify-between">
-                <div>
-                    <Label htmlFor="signup-visibility" className="font-medium">Sign Up Page Visibility</Label>
-                    <p className="text-sm text-muted-foreground">Control whether new users can create an account.</p>
+           <Card>
+            <CardHeader>
+              <CardTitle className="font-headline">Notifications</CardTitle>
+              <CardDescription>
+                Manage your notification preferences.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <Label htmlFor="low-stock-alerts" className="font-medium">Low Stock Alerts</Label>
+                        <p className="text-sm text-muted-foreground">Receive an email when stock is low.</p>
+                    </div>
+                    <Switch id="low-stock-alerts" disabled/>
                 </div>
-                <Switch 
-                  id="signup-visibility" 
-                  checked={settings.signupVisible} 
-                  onCheckedChange={value => handleSettingsChange('signupVisible', value)} 
-                  disabled={isSavingSecurity}
-                />
-            </div>
-        </CardContent>
-        <CardFooter className="border-t px-6 py-4">
-            <Button onClick={handleSaveSecurity} disabled={isSavingSecurity}>
-              {isSavingSecurity && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Security Settings
-            </Button>
-        </CardFooter>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-            <CardTitle className="font-headline">Data Management</CardTitle>
-            <CardDescription>Permanently delete application data. This is useful for clearing test data.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Button variant="destructive" disabled>Reset Application Data</Button>
-        </CardContent>
-      </Card>
-
-       <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Notifications</CardTitle>
-          <CardDescription>
-            Manage your notification preferences.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <Label htmlFor="low-stock-alerts" className="font-medium">Low Stock Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Receive an email when stock is low.</p>
+                 <div className="flex items-center justify-between">
+                    <div>
+                        <Label htmlFor="weekly-summary" className="font-medium">Weekly Summary</Label>
+                        <p className="text-sm text-muted-foreground">Get a weekly summary of sales and expenses.</p>
+                    </div>
+                    <Switch id="weekly-summary" defaultChecked disabled/>
                 </div>
-                <Switch id="low-stock-alerts" disabled/>
-            </div>
-             <div className="flex items-center justify-between">
-                <div>
-                    <Label htmlFor="weekly-summary" className="font-medium">Weekly Summary</Label>
-                    <p className="text-sm text-muted-foreground">Get a weekly summary of sales and expenses.</p>
-                </div>
-                <Switch id="weekly-summary" defaultChecked disabled/>
-            </div>
-        </CardContent>
-        <CardFooter className="border-t px-6 py-4">
-          <Button disabled>Save Preferences</Button>
-        </CardFooter>
-      </Card>
+            </CardContent>
+            <CardFooter className="border-t px-6 py-4">
+              <Button disabled>Save Preferences</Button>
+            </CardFooter>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
+
+    
