@@ -43,8 +43,12 @@ import { allNavItems } from './sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from 'next-themes';
 import { getAppSettings, getUser } from '@/lib/firestore';
-import type { AppSettings, AppUser } from '@/lib/types';
+import type { AppSettings, AppUser, Role } from '@/lib/types';
 
+const salesmanNavItems = [
+    { href: '/', icon: Home, label: 'Dashboard', roles: ['Salesman'] },
+    { href: '/sales', icon: ShoppingCart, label: 'Sales', roles: ['Salesman'] },
+]
 
 export default function Header() {
   const pathname = usePathname();
@@ -70,8 +74,12 @@ export default function Header() {
 
   useEffect(() => {
     if (appUser?.role) {
-      const filteredItems = allNavItems.filter(item => item.roles.includes(appUser.role!));
-      setNavItems(filteredItems);
+      if (appUser.role === 'Salesman') {
+        setNavItems(salesmanNavItems);
+      } else {
+        const filteredItems = allNavItems.filter(item => item.roles.includes(appUser.role as Role));
+        setNavItems(filteredItems);
+      }
     }
   }, [appUser]);
 
