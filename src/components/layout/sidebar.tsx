@@ -26,19 +26,19 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from 'next-themes';
-import { getAppSettings } from '@/lib/firestore';
+import { getAppSettings, getUser } from '@/lib/firestore';
 import { useEffect, useState } from 'react';
-import type { AppSettings } from '@/lib/types';
+import type { AppSettings, AppUser } from '@/lib/types';
 
-export const navItems = [
-  { href: '/', icon: Home, label: 'Dashboard' },
-  { href: '/sales', icon: ShoppingCart, label: 'Sales' },
-  { href: '/inventory', icon: Package, label: 'Inventory' },
-  { href: '/expenses', icon: Coins, label: 'Expenses' },
-  { href: '/assignments', icon: ClipboardList, label: 'Salesman Plan' },
-  { href: '/salesman-activity', icon: Users2, label: 'Salesman Activity' },
-  { href: '/reports', icon: FileText, label: 'Reports' },
-  { href: '/analysis', icon: BrainCircuit, label: 'P/L Analysis' },
+export const allNavItems = [
+  { href: '/', icon: Home, label: 'Dashboard', roles: ['Admin', 'Manager', 'Worker', 'Cashier', 'Salesman'] },
+  { href: '/sales', icon: ShoppingCart, label: 'Sales', roles: ['Admin', 'Manager', 'Cashier', 'Salesman'] },
+  { href: '/inventory', icon: Package, label: 'Inventory', roles: ['Admin', 'Manager', 'Worker'] },
+  { href: '/expenses', icon: Coins, label: 'Expenses', roles: ['Admin', 'Manager', 'Cashier'] },
+  { href: '/assignments', icon: ClipboardList, label: 'Salesman Plan', roles: ['Admin', 'Manager'] },
+  { href: '/salesman-activity', icon: Users2, label: 'Salesman Activity', roles: ['Admin', 'Manager'] },
+  { href: '/reports', icon: FileText, label: 'Reports', roles: ['Admin', 'Manager'] },
+  { href: '/analysis', icon: BrainCircuit, label: 'P/L Analysis', roles: ['Admin', 'Manager'] },
 ];
 
 export function Sidebar() {
@@ -46,10 +46,30 @@ export function Sidebar() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const [navItems, setNavItems] = useState(allNavItems);
+
 
   useEffect(() => {
     getAppSettings().then(setSettings);
   }, []);
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+        if(user) {
+            const userData = await getUser(user.uid);
+            setAppUser(userData);
+        }
+    }
+    fetchUser();
+  }, [user]);
+
+  useEffect(() => {
+    if (appUser?.role) {
+      const filteredItems = allNavItems.filter(item => item.roles.includes(appUser.role!));
+      setNavItems(filteredItems);
+    }
+  }, [appUser]);
 
   const logoUrl = theme === 'dark' ? settings?.logoDark : settings?.logoLight;
   

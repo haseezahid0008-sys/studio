@@ -39,11 +39,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { navItems } from './sidebar';
+import { allNavItems } from './sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from 'next-themes';
-import { getAppSettings } from '@/lib/firestore';
-import type { AppSettings } from '@/lib/types';
+import { getAppSettings, getUser } from '@/lib/firestore';
+import type { AppSettings, AppUser } from '@/lib/types';
 
 
 export default function Header() {
@@ -51,10 +51,30 @@ export default function Header() {
   const { user, logout } = useAuth();
   const { theme } = useTheme();
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const [navItems, setNavItems] = useState(allNavItems);
 
   useEffect(() => {
     getAppSettings().then(setSettings);
   }, []);
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+        if(user) {
+            const userData = await getUser(user.uid);
+            setAppUser(userData);
+        }
+    }
+    fetchUser();
+  }, [user]);
+
+  useEffect(() => {
+    if (appUser?.role) {
+      const filteredItems = allNavItems.filter(item => item.roles.includes(appUser.role!));
+      setNavItems(filteredItems);
+    }
+  }, [appUser]);
+
 
   const logoUrl = theme === 'dark' ? settings?.logoDark : settings?.logoLight;
   
