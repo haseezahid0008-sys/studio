@@ -49,7 +49,7 @@ export default function SalesmanActivityPage() {
         const [salesmen, sales, appSettings] = await Promise.all([getSalesmen(), getSales(), getAppSettings()]);
         setSettings(appSettings);
 
-        const data = salesmen.filter(s => s.name).map(salesman => {
+        const data = salesmen.map(salesman => {
           const salesmanSales = sales.filter(s => s.salesmanId === salesman.uid);
           const totalRevenue = salesmanSales.reduce((acc, s) => acc + s.total, 0);
           const totalSales = salesmanSales.length;
@@ -61,6 +61,7 @@ export default function SalesmanActivityPage() {
               sales: salesmanSales,
           }
         });
+        
         setSalesmanData(data);
 
       } catch(err) {
