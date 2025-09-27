@@ -35,7 +35,7 @@ export const navItems = [
   { href: '/sales', icon: ShoppingCart, label: 'Sales' },
   { href: '/inventory', icon: Package, label: 'Inventory' },
   { href: '/expenses', icon: Coins, label: 'Expenses' },
-  { href: '/assignments', icon: ClipboardList, label: 'Assignments' },
+  { href: '/assignments', icon: ClipboardList, label: 'Salesman Plan' },
   { href: '/salesman-activity', icon: Users2, label: 'Salesman Activity' },
   { href: '/reports', icon: FileText, label: 'Reports' },
   { href: '/analysis', icon: BrainCircuit, label: 'P/L Analysis' },

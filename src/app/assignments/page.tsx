@@ -113,13 +113,13 @@ export default function AssignmentsPage() {
     return (
         <>
             <PageHeader
-                title="Salesman Assignments"
-                description="Create and manage daily assignments for your sales team."
+                title="Salesman Plan"
+                description="Create and manage daily plans for your sales team."
             />
             <div className="grid gap-8 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">New Assignment</CardTitle>
+                        <CardTitle className="font-headline">New Plan</CardTitle>
                         <CardDescription>Assign a daily route and tasks to a salesman.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-6">
@@ -153,15 +153,15 @@ export default function AssignmentsPage() {
                     <CardFooter className="flex justify-end">
                         <Button onClick={handleSubmit} disabled={isSaving}>
                             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create Assignment
+                            Create Plan
                         </Button>
                     </CardFooter>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">Recent Assignments</CardTitle>
-                         <CardDescription>A log of the most recent assignments created.</CardDescription>
+                        <CardTitle className="font-headline">Recent Plans</CardTitle>
+                         <CardDescription>A log of the most recent plans created.</CardDescription>
                     </CardHeader>
                     <CardContent>
                        <div className="space-y-6">
