@@ -62,10 +62,9 @@ export const getSales = async (): Promise<Sale[]> => {
 
 export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'salesmanId'>, salesmanId: string) => {
     const salesmanDoc = await getUser(salesmanId);
-    if (!salesmanDoc) {
-        throw new Error("Salesman not found");
-    }
-    const salesmanName = salesmanDoc.name;
+    
+    // Fallback if name is not available
+    const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'Unknown Salesman';
 
     const saleWithTimestamp = {
         ...sale,
@@ -173,7 +172,7 @@ export const getCurrencySymbol = (currencyCode?: string): string => {
 const assignmentsCollection = collection(db, 'assignments');
 
 export const getAssignments = async (): Promise<Assignment[]> => {
-    const snapshot = await getDocs(assignmentsCollection);
+    const snapshot = await getDocs(query(assignmentsCollection));
     return snapshot.docs.map(doc => {
         const data = doc.data();
         return { 
