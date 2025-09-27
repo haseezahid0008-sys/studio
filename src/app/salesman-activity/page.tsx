@@ -49,7 +49,7 @@ export default function SalesmanActivityPage() {
         const [salesmen, sales, appSettings] = await Promise.all([getSalesmen(), getSales(), getAppSettings()]);
         setSettings(appSettings);
 
-        const data = salesmen.map(salesman => {
+        const data = salesmen.filter(s => s.name).map(salesman => {
           const salesmanSales = sales.filter(s => s.salesmanName === salesman.name);
           const totalRevenue = salesmanSales.reduce((acc, s) => acc + s.total, 0);
           const totalSales = salesmanSales.length;
@@ -103,7 +103,7 @@ export default function SalesmanActivityPage() {
                         <div className="flex items-center gap-4 w-full pr-4">
                             <div className="flex items-center gap-4 flex-1">
                                 <Avatar className="hidden h-9 w-9 sm:flex">
-                                    <AvatarFallback>{sm.name.charAt(0)}</AvatarFallback>
+                                    <AvatarFallback>{sm.name?.charAt(0) || '?'}</AvatarFallback>
                                 </Avatar>
                                 <div className="grid gap-1 text-left">
                                     <p className="text-sm font-medium leading-none">
