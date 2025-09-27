@@ -21,6 +21,7 @@ export type SaleItem = {
 export type Sale = {
   id: string;
   date: string;
+  salesmanId: string;
   salesmanName: string;
   customerName:string;
   customerPhone: string;

@@ -60,7 +60,7 @@ export const getSales = async (): Promise<Sale[]> => {
     });
 };
 
-export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName'>, salesmanId: string) => {
+export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'salesmanId'>, salesmanId: string) => {
     const salesmanDoc = await getUser(salesmanId);
     if (!salesmanDoc) {
         throw new Error("Salesman not found");
@@ -69,6 +69,7 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName'>, salesmanI
 
     const saleWithTimestamp = {
         ...sale,
+        salesmanId,
         salesmanName,
         date: Timestamp.fromDate(new Date(sale.date))
     }

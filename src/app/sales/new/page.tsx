@@ -151,8 +151,8 @@ export default function NewSalePage() {
       };
 
       try {
-          if(!user) throw new Error("User not authenticated");
-          await addSale(saleData, user.uid);
+          if(!salesmanId) throw new Error("Salesman not selected");
+          await addSale(saleData, salesmanId);
           toast({
               title: "Success",
               description: "Sale recorded successfully.",

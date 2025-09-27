@@ -50,7 +50,7 @@ export default function SalesmanActivityPage() {
         setSettings(appSettings);
 
         const data = salesmen.filter(s => s.name).map(salesman => {
-          const salesmanSales = sales.filter(s => s.salesmanName === salesman.name);
+          const salesmanSales = sales.filter(s => s.salesmanId === salesman.uid);
           const totalRevenue = salesmanSales.reduce((acc, s) => acc + s.total, 0);
           const totalSales = salesmanSales.length;
 
@@ -135,6 +135,7 @@ export default function SalesmanActivityPage() {
                                     {sm.sales.map(sale => (
                                     <TableRow key={sale.id}>
                                         <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+
                                         <TableCell>{sale.customerName}</TableCell>
                                         <TableCell className="text-right">{currencySymbol}{sale.total.toLocaleString()}</TableCell>
                                     </TableRow>
