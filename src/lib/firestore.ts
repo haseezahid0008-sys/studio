@@ -47,7 +47,11 @@ export const getProduct = async (id: string): Promise<Product | null> => {
 };
 
 export const addProduct = async (product: Omit<Product, 'id'>) => {
-  return await addDoc(productsCollection, product);
+    const productWithStock = {
+        ...product,
+        stock: product.stock || 0
+    };
+  return await addDoc(productsCollection, productWithStock);
 };
 
 export const updateProduct = async (id: string, product: Partial<Product>) => {
@@ -100,6 +104,8 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'customer
             throw new Error("Customer not found!");
         }
         const customerName = customerSnap.data().name;
+        const customerPhone = customerSnap.data().phone;
+
 
         // 2. Prepare Sale Document
         const newSaleRef = doc(salesCollection);
@@ -108,6 +114,7 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'customer
             salesmanId,
             salesmanName,
             customerName,
+            customerPhone,
             date: Timestamp.fromDate(new Date(sale.date)),
         };
         transaction.set(newSaleRef, saleWithTimestamp);
@@ -130,7 +137,7 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'customer
         
         // 4. Update customer's total due amount
         const pendingAmount = sale.total - sale.amountPaid;
-        if (pendingAmount > 0) {
+        if (pendingAmount !== 0) {
             const currentDue = customerSnap.data().totalDue || 0;
             transaction.update(customerRef, { totalDue: currentDue + pendingAmount });
         }
@@ -166,7 +173,7 @@ export const getPaymentsForSale = async (saleId: string): Promise<Payment[]> => 
 
 export const addPayment = async (paymentData: Omit<Payment, 'id' | 'date'>) => {
     return await runTransaction(db, async (transaction) => {
-        const { saleId, amount, recordedById } = paymentData;
+        const { saleId, amount, recordedById, recordedByName } = paymentData;
 
         // 1. Get Sale and Customer
         const saleRef = doc(db, 'sales', saleId);
@@ -258,9 +265,11 @@ export const getUser = async (uid: string): Promise<AppUser | null> => {
 const customersCollection = collection(db, 'customers');
 
 export const getCustomersBySalesman = async(salesmanId: string): Promise<Customer[]> => {
-    const q = query(customersCollection, where("salesmanId", "==", salesmanId), orderBy("name"));
+    const q = query(customersCollection, where("salesmanId", "==", salesmanId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+    const customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+    // Sort by name in the code instead of in the query
+    return customers.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export const getCustomer = async (id: string): Promise<Customer | null> => {
@@ -286,12 +295,17 @@ export const getAppSettings = async (forceRefresh = false): Promise<AppSettings>
         return cachedSettings;
     }
 
-    const docSnap = await getDoc(settingsDocRef);
-    if (docSnap.exists()) {
-        cachedSettings = docSnap.data() as AppSettings;
-        return cachedSettings;
+    try {
+        const docSnap = await getDoc(settingsDocRef);
+        if (docSnap.exists()) {
+            cachedSettings = docSnap.data() as AppSettings;
+            return cachedSettings;
+        }
+    } catch (e) {
+        console.error("Could not fetch app settings from Firestore.", e);
     }
-    // Return default settings if they don't exist
+    
+    // Return default settings if they don't exist or if there's an error
     const defaultSettings: AppSettings = {
         appName: 'GLOW',
         logoLight: 'https://iili.io/KYqQC1R.png',
@@ -400,7 +414,7 @@ export const getWorkerTasks = async (): Promise<WorkerTask[]> => {
         const taskDate = new Date(createdAt);
         const isOld = now.toDateString() !== taskDate.toDateString();
 
-        if (isOld && isAfter1PM && task.status !== 'Expired') {
+        if (isOld && isAfter1PM && task.status === 'Pending') {
              const updatedTask = {
                 ...task,
                 status: 'Expired' as 'Expired',
@@ -441,3 +455,16 @@ export const updateWorkerTask = async (id: string, task: Partial<Omit<WorkerTask
     return await updateDoc(docRef, task);
 };
 
+export const getAppSettingsWithDefaults = async (): Promise<AppSettings> => {
+    const settings = await getAppSettings();
+    return settings || {
+        appName: 'GLOW',
+        logoLight: 'https://iili.io/KYqQC1R.png',
+        logoDark: 'https://iili.io/KYkW0NV.png',
+        authLogoLight: 'https://iili.io/KYqQC1R.png',
+        authLogoDark: 'https://iili.io/KYkW0NV.png',
+        favicon: 'https://iili.io/KYqQC1R.png',
+        currency: 'pkr',
+        signupVisible: true,
+    };
+};
