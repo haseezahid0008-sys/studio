@@ -14,30 +14,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (loading) return; // Wait until loading is false
+    if (loading) {
+      return; // Wait until Firebase has checked the auth state.
+    }
 
     const isPublic = publicRoutes.includes(pathname);
 
-    // If user is not logged in and is trying to access a private route, redirect to login
+    // If there's no user and the route is not public, redirect to login.
     if (!user && !isPublic) {
       router.push('/login');
     }
 
-    // If user is logged in and is on a public route, redirect to dashboard
+    // If there is a user and the route is public (like login/signup), redirect to the dashboard.
     if (user && isPublic) {
-        router.push('/');
+      router.push('/');
     }
   }, [user, loading, router, pathname]);
+  
+  const isPublic = publicRoutes.includes(pathname);
 
-  // Show a loader while authentication state is loading,
-  // or if we're about to redirect.
-  if (loading || (!user && !publicRoutes.includes(pathname)) || (user && publicRoutes.includes(pathname))) {
+  // While loading, show a spinner.
+  if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
       </div>
     );
   }
+
+  // If there's no user and we are on a private page, show a spinner while we redirect.
+  if (!user && !isPublic) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+        </div>
+      );
+  }
+  
+    // If there is a user and we are on a public page, show a spinner while we redirect.
+  if (user && isPublic) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+        </div>
+      );
+  }
+
 
   return <>{children}</>;
 }
