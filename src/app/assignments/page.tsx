@@ -218,7 +218,7 @@ export default function AssignmentsPage() {
                                         <div className="text-sm text-muted-foreground space-y-1">
                                             <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-sky-500" /> <strong>Location:</strong> {assignment.location}</p>
                                         </div>
-                                         <p className="text-xs text-muted-foreground mt-1">{new Date(assignment.createdAt).toLocaleString()}</p>
+                                         <p className="text-xs text-muted-foreground mt-1">Assigned on: {new Date(assignment.createdAt).toLocaleString()}</p>
                                     </div>
                                     {new Date(assignment.createdAt).toISOString().split('T')[0] === today && (
                                         <Button variant="outline" size="icon" asChild>
