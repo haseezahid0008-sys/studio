@@ -173,8 +173,17 @@ export default function ReportsPage() {
       
       <style jsx global>{`
         @media print {
-            body {
-                background: white !important;
+            body * {
+                visibility: hidden;
+            }
+            #report-content, #report-content * {
+                visibility: visible;
+            }
+            #report-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
             }
             .print\\:hidden {
                 display: none;
