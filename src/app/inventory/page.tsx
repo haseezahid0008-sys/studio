@@ -1,4 +1,5 @@
 
+'use client';
 import Link from "next/link"
 import {
   Card,
@@ -18,10 +19,35 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import PageHeader from "@/components/page-header"
-import { products } from "@/lib/data"
 import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react";
+import type { Product } from "@/lib/types";
+import { getProducts } from "@/lib/firestore";
+import { Loader2 } from "lucide-react";
+
 
 export default function InventoryPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true);
+        const productsData = await getProducts();
+        setProducts(productsData);
+      } catch (err) {
+        setError("Failed to fetch products. Please try again later.");
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   return (
     <>
       <PageHeader
@@ -38,6 +64,15 @@ export default function InventoryPage() {
             <CardDescription>A list of all products in your inventory.</CardDescription>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-destructive">{error}</p>
+            </div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -74,12 +109,15 @@ export default function InventoryPage() {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
-        <CardFooter>
-          <div className="text-xs text-muted-foreground">
-            Showing <strong>1-{products.length}</strong> of <strong>{products.length}</strong> products
-          </div>
-        </CardFooter>
+        {!isLoading && !error && (
+            <CardFooter>
+            <div className="text-xs text-muted-foreground">
+                Showing <strong>1-{products.length}</strong> of <strong>{products.length}</strong> products
+            </div>
+            </CardFooter>
+        )}
       </Card>
     </>
   )
