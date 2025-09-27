@@ -27,10 +27,12 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAppSettings, updateAppSettings } from "@/lib/firestore";
 import type { AppSettings } from "@/lib/types";
+import { useTheme } from "next-themes";
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<Partial<AppSettings>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -142,7 +144,7 @@ export default function SettingsPage() {
         <CardContent>
           <div className="grid gap-2">
             <Label htmlFor="theme">Theme</Label>
-             <Select defaultValue="system">
+             <Select value={theme} onValueChange={setTheme}>
               <SelectTrigger className="w-[280px]">
                 <SelectValue placeholder="Select a theme" />
               </SelectTrigger>
