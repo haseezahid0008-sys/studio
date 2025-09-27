@@ -80,6 +80,6 @@ export type WorkerTask = {
     workerName: string;
     taskDescription: string;
     createdAt: string;
-    status: 'Pending' | 'In Progress' | 'Completed';
+    status: 'Pending' | 'In Progress' | 'Completed' | 'Expired';
     progressNotes?: string;
 }

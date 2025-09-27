@@ -124,12 +124,13 @@ export default function WorkerProgressPage() {
                                         <TableCell>
                                             <Badge variant={
                                                 task.status === 'Completed' ? 'default' : 
-                                                task.status === 'In Progress' ? 'secondary' : 'outline'
+                                                task.status === 'In Progress' ? 'secondary' :
+                                                task.status === 'Expired' ? 'destructive' : 'outline'
                                             }>
                                                 {task.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>{task.progressNotes}</TableCell>
+                                        <TableCell className="font-medium">{task.progressNotes}</TableCell>
                                     </TableRow>
                                     ))}
                                 </TableBody>

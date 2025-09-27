@@ -182,14 +182,44 @@ const assignmentsCollection = collection(db, 'assignments');
 
 export const getAssignments = async (): Promise<Assignment[]> => {
     const snapshot = await getDocs(query(assignmentsCollection, orderBy('createdAt', 'desc')));
-    return snapshot.docs.map(doc => {
+    const now = new Date();
+    const isAfter8AM = now.getHours() >= 8;
+
+    const assignments = snapshot.docs.map(doc => {
         const data = doc.data();
-        return { 
+        const createdAt = (data.createdAt as Timestamp)?.toDate();
+        
+        const assignment: Assignment = { 
             id: doc.id, 
             ...data,
-            createdAt: (data.createdAt as Timestamp)?.toDate().toISOString()
+            createdAt: createdAt.toISOString()
         } as Assignment;
+
+        const assignmentDate = new Date(createdAt);
+        const isOld = now.toDateString() !== assignmentDate.toDateString();
+
+        if (isOld && isAfter8AM && assignment.tomorrowLocation) {
+            // Logic to shift tomorrow to today
+            const updatedAssignment = {
+                ...assignment,
+                todayLocation: assignment.tomorrowLocation,
+                tomorrowLocation: '',
+                status: 'Pending' as 'Pending',
+                progressNotes: '',
+                createdAt: new Date().toISOString(), // Update creation time to today
+            };
+            const docRef = doc(db, 'assignments', assignment.id);
+            updateDoc(docRef, {
+                ...updatedAssignment,
+                createdAt: Timestamp.now(), // Use server timestamp for update
+            });
+            return updatedAssignment;
+        }
+
+        return assignment;
     });
+
+    return assignments;
 };
 
 export const getAssignment = async (id: string): Promise<Assignment | null> => {
@@ -224,14 +254,33 @@ const workerTasksCollection = collection(db, 'workerTasks');
 
 export const getWorkerTasks = async (): Promise<WorkerTask[]> => {
     const snapshot = await getDocs(query(workerTasksCollection, orderBy('createdAt', 'desc')));
-    return snapshot.docs.map(doc => {
+    const now = new Date();
+    const isAfter1PM = now.getHours() >= 13;
+
+    const tasks = snapshot.docs.map(doc => {
         const data = doc.data();
-        return {
+        const createdAt = (data.createdAt as Timestamp)?.toDate();
+        const task: WorkerTask = {
             id: doc.id,
             ...data,
-            createdAt: (data.createdAt as Timestamp)?.toDate().toISOString()
+            createdAt: createdAt.toISOString()
         } as WorkerTask;
+
+        const taskDate = new Date(createdAt);
+        const isOld = now.toDateString() !== taskDate.toDateString();
+
+        if (isOld && isAfter1PM && task.status !== 'Expired') {
+             const updatedTask = {
+                ...task,
+                status: 'Expired' as 'Expired',
+            };
+            const docRef = doc(db, 'workerTasks', task.id);
+            updateDoc(docRef, { status: 'Expired' });
+            return updatedTask;
+        }
+        return task;
     });
+    return tasks;
 };
 
 export const getWorkerTask = async (id: string): Promise<WorkerTask | null> => {
