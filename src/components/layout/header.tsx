@@ -124,7 +124,7 @@ export default function Header() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>{user?.email || 'My Account'}</DropdownMenuLabel>
+          <DropdownMenuLabel>{user?.displayName || user?.email || 'My Account'}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link href="/settings">
@@ -143,3 +143,5 @@ export default function Header() {
     </header>
   );
 }
+
+    

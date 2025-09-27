@@ -28,14 +28,18 @@ import { useToast } from "@/hooks/use-toast";
 import { getAppSettings, updateAppSettings } from "@/lib/firestore";
 import type { AppSettings } from "@/lib/types";
 import { useTheme } from "next-themes";
+import { updateProfile } from "firebase/auth";
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<Partial<AppSettings>>({});
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isProfileSaving, setIsProfileSaving] = useState(false);
+
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -46,6 +50,13 @@ export default function SettingsPage() {
     }
     fetchSettings();
   }, []);
+
+  useEffect(() => {
+    if (user?.displayName) {
+      setDisplayName(user.displayName);
+    }
+  }, [user]);
+
 
   const handleSettingsChange = (key: keyof AppSettings, value: any) => {
     setSettings(prev => ({...prev, [key]: value}));
@@ -68,6 +79,27 @@ export default function SettingsPage() {
       })
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  const handleProfileSave = async () => {
+    if (!user) return;
+    setIsProfileSaving(true);
+    try {
+      await updateProfile(user, { displayName });
+      toast({
+        title: "Success",
+        description: "Profile updated successfully.",
+      });
+    } catch (error) {
+       console.error("Failed to update profile", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsProfileSaving(false);
     }
   }
 
@@ -100,11 +132,14 @@ export default function SettingsPage() {
           </div>
            <div className="space-y-2">
             <Label htmlFor="name">Display Name</Label>
-            <Input id="name" placeholder="Enter your display name" />
+            <Input id="name" placeholder="Enter your display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={isProfileSaving}/>
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button disabled>Save</Button>
+          <Button onClick={handleProfileSave} disabled={isProfileSaving}>
+             {isProfileSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save
+          </Button>
         </CardFooter>
       </Card>
 
@@ -280,3 +315,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

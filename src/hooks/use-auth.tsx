@@ -9,6 +9,7 @@ import {
   signOut,
   User,
   UserCredential,
+  updateProfile,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { addUser } from '@/lib/firestore';
@@ -74,3 +75,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    
