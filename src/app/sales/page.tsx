@@ -3,6 +3,7 @@
 
 import Link from "next/link"
 import { PlusCircle, File, Loader2 } from "lucide-react"
+import * as XLSX from 'xlsx';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -27,12 +28,15 @@ import { getSales, getAppSettings, getCurrencySymbol } from "@/lib/firestore"
 import PageHeader from "@/components/page-header"
 import type { Sale, AppSettings } from "@/lib/types";
 import { useEffect, useState } from "react";
+import { saveAs } from 'file-saver';
+
 
 export default function SalesPage() {
   const [allSales, setAllSales] = useState<Sale[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -57,8 +61,30 @@ export default function SalesPage() {
   const pendingSales = allSales.filter(s => s.total > s.amountPaid);
   const currencySymbol = getCurrencySymbol(settings?.currency);
 
+  const handleExport = () => {
+    const dataToExport = activeTab === 'all' ? allSales : pendingSales;
+    const formattedData = dataToExport.map(sale => ({
+        'Date': new Date(sale.date).toLocaleDateString(),
+        'Customer Name': sale.customerName,
+        'Customer Phone': sale.customerPhone,
+        'Salesman': sale.salesmanName,
+        'Total Amount': sale.total,
+        'Amount Paid': sale.amountPaid,
+        'Pending Amount': sale.total - sale.amountPaid,
+        'Status': sale.total > sale.amountPaid ? "Pending" : "Paid",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sales");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-T'});
+    saveAs(data, `Sales_Report_${new Date().toLocaleDateString()}.xlsx`);
+  }
+
   return (
-    <Tabs defaultValue="all">
+    <Tabs defaultValue="all" onValueChange={setActiveTab}>
         <div className="flex items-center">
             <div className="flex-1">
                  <PageHeader title="Sales" description="Manage and view all customer sales." />
@@ -68,7 +94,7 @@ export default function SalesPage() {
                     <TabsTrigger value="all">All</TabsTrigger>
                     <TabsTrigger value="pending">Pending</TabsTrigger>
                 </TabsList>
-                <Button size="sm" variant="outline" className="h-8 gap-1">
+                <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
                     <File className="h-3.5 w-3.5" />
                     <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                     Export
