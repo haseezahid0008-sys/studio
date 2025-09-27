@@ -16,11 +16,12 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { addUser } from '@/lib/firestore';
+import type { Role } from '@/lib/types';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signup: (email: string, password: string) => Promise<UserCredential>;
+  signup: (email: string, password: string, role: Role) => Promise<UserCredential>;
   login: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -40,7 +41,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, role: Role) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { user } = userCredential;
     if(user) {
@@ -48,7 +49,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             uid: user.uid,
             email: user.email,
             createdAt: new Date(),
-            role: 'Worker', // Default role for new signups
+            role: role,
         });
     }
     return userCredential;

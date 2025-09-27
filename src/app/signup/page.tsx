@@ -13,7 +13,15 @@ import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import { getAppSettings } from '@/lib/firestore';
-import type { AppSettings } from '@/lib/types';
+import type { AppSettings, Role } from '@/lib/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ROLES } from '@/lib/types';
 
 
 export default function SignupPage() {
@@ -23,6 +31,7 @@ export default function SignupPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<Role | ''>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,10 +43,14 @@ export default function SignupPage() {
 
   const handleSignup = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!role) {
+        setError('Please select a role.');
+        return;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      await signup(email, password);
+      await signup(email, password, role);
       router.push('/');
     } catch (error) {
       setError('Failed to sign up. The email might already be in use.');
@@ -63,7 +76,7 @@ export default function SignupPage() {
     <div className="w-full h-screen lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
        <div className="hidden bg-muted lg:block">
         <Image
-          src="https://picsum.photos/seed/2/1200/900"
+          src="https://placehold.co/1200x900/000000/FFFFFF/png"
           alt="Image"
           width="1920"
           height="1080"
@@ -103,6 +116,19 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
               />
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="role">Role</Label>
+                <Select value={role} onValueChange={(value) => setRole(value as Role)} required disabled={isLoading}>
+                    <SelectTrigger id="role">
+                        <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {ROLES.map((r) => (
+                            <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={isLoading}>
