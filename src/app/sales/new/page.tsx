@@ -28,6 +28,15 @@ import type { Product, AppUser } from "@/lib/types"
 import PageHeader from "@/components/page-header"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 
 type SaleItem = {
   productId: string
@@ -39,12 +48,95 @@ type SaleItem = {
 const CLOUDINARY_CLOUD_NAME = 'dlurl7eyy';
 const CLOUDINARY_UPLOAD_PRESET = 'image-host';
 
+
+function CameraModal({ onCapture }: { onCapture: (file: File) => void }) {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [stream, setStream] = useState<MediaStream | null>(null);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+    const openCamera = async () => {
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            setStream(mediaStream);
+            if (videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+            }
+            setIsCameraOpen(true);
+        } catch (error) {
+            console.error("Error accessing camera:", error);
+            alert("Could not access the camera. Please check permissions.");
+        }
+    };
+
+    const closeCamera = () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        setStream(null);
+        setIsCameraOpen(false);
+    };
+
+    const handleCapture = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                    onCapture(file);
+                    closeCamera();
+                }
+            }, 'image/jpeg');
+        }
+    };
+    
+    // Cleanup on component unmount
+    useEffect(() => {
+        return () => {
+            if (stream) {
+                 stream.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [stream]);
+
+    return (
+        <Dialog onOpenChange={(open) => !open && closeCamera()}>
+            <DialogTrigger asChild>
+                <Button variant="outline" type="button" onClick={openCamera}>
+                    <Camera className="mr-2"/> Capture Shop Photo
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Live Camera Capture</DialogTitle>
+                </DialogHeader>
+                <div className="relative">
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-auto rounded-md bg-black" />
+                    <canvas ref={canvasRef} className="hidden" />
+                </div>
+                <DialogFooter>
+                     <DialogClose asChild>
+                        <Button variant="outline" onClick={closeCamera}>Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleCapture} disabled={!isCameraOpen}>Capture</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+
 export default function NewSalePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [salesmen, setSalesmen] = useState<AppUser[]>([]);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
@@ -112,16 +204,13 @@ export default function NewSalePage() {
     setPendingAmount(newPending)
   }, [total, amountPaid])
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (file) {
-          setShopImageFile(file);
-          const reader = new FileReader();
-          reader.onloadend = () => {
-              setImagePreview(reader.result as string);
-          }
-          reader.readAsDataURL(file);
+  const handleCapture = (file: File) => {
+      setShopImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+          setImagePreview(reader.result as string);
       }
+      reader.readAsDataURL(file);
   }
 
   const handleItemChange = (index: number, field: keyof SaleItem, value: any) => {
@@ -271,10 +360,7 @@ export default function NewSalePage() {
               </div>
               <div className="grid gap-2">
                   <Label htmlFor="shop-image">Shop Photo (Required)</Label>
-                  <Input id="shop-image" type="file" accept="image/*" capture="environment" onChange={handleImageChange} disabled={isSaving} ref={fileInputRef} className="hidden" required/>
-                   <Button variant="outline" type="button" onClick={() => fileInputRef.current?.click()} disabled={isSaving}>
-                        <Camera className="mr-2"/> Capture Shop Photo
-                   </Button>
+                  <CameraModal onCapture={handleCapture} />
                   {imagePreview && (
                     <div className="mt-2">
                       <Image src={imagePreview} alt="Shop preview" width={100} height={100} className="rounded-md object-cover"/>
@@ -387,5 +473,3 @@ export default function NewSalePage() {
     </>
   )
 }
-
-    
