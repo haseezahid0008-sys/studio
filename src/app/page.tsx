@@ -29,13 +29,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Sale, Product, Expense } from '@/lib/types';
-import { getSales, getProducts, getExpenses } from '@/lib/firestore';
+import type { Sale, Product, Expense, AppSettings } from '@/lib/types';
+import { getSales, getProducts, getExpenses, getAppSettings, getCurrencySymbol } from '@/lib/firestore';
 
 export default function Dashboard() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,14 +44,16 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [salesData, productsData, expensesData] = await Promise.all([
+        const [salesData, productsData, expensesData, appSettings] = await Promise.all([
           getSales(),
           getProducts(),
           getExpenses(),
+          getAppSettings(),
         ]);
         setSales(salesData);
         setProducts(productsData);
         setExpenses(expensesData);
+        setSettings(appSettings);
       } catch (err) {
         console.error(err);
         setError("Failed to fetch dashboard data. Please try again later.");
@@ -60,6 +63,8 @@ export default function Dashboard() {
     };
     fetchData();
   }, []);
+
+  const currencySymbol = getCurrencySymbol(settings?.currency);
 
   const totalRevenue = sales.reduce((acc, sale) => acc + sale.total, 0);
   const totalSalesCount = sales.length;
@@ -104,7 +109,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-headline">
-                ${totalRevenue.toLocaleString()}
+                {currencySymbol}{totalRevenue.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">
                 Based on {totalSalesCount} sales
@@ -130,7 +135,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-headline">
-                ${totalExpenses.toLocaleString()}
+                {currencySymbol}{totalExpenses.toLocaleString()}
               </div>
                <p className="text-xs text-muted-foreground">
                 Across {expenses.length} records
@@ -143,7 +148,7 @@ export default function Dashboard() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-headline">${pendingPayments.toLocaleString()}</div>
+              <div className="text-2xl font-bold font-headline">{currencySymbol}{pendingPayments.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
                 From {sales.filter(s => s.total > s.amountPaid).length} invoices
               </p>
@@ -204,7 +209,7 @@ export default function Dashboard() {
                         {new Date(sale.date).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${sale.total.toLocaleString()}
+                        {currencySymbol}{sale.total.toLocaleString()}
                       </TableCell>
                     </TableRow>
                   ))}

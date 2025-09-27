@@ -21,13 +21,14 @@ import { Badge } from "@/components/ui/badge"
 import PageHeader from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react";
-import type { Product } from "@/lib/types";
-import { getProducts } from "@/lib/firestore";
+import type { Product, AppSettings } from "@/lib/types";
+import { getProducts, getAppSettings, getCurrencySymbol } from "@/lib/firestore";
 import { Loader2 } from "lucide-react";
 
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +36,12 @@ export default function InventoryPage() {
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
-        const productsData = await getProducts();
+        const [productsData, appSettings] = await Promise.all([
+            getProducts(),
+            getAppSettings()
+        ]);
         setProducts(productsData);
+        setSettings(appSettings);
       } catch (err) {
         setError("Failed to fetch products. Please try again later.");
         console.error(err);
@@ -47,6 +52,8 @@ export default function InventoryPage() {
 
     fetchProducts();
   }, []);
+
+  const currencySymbol = getCurrencySymbol(settings?.currency);
 
   return (
     <>
@@ -93,7 +100,7 @@ export default function InventoryPage() {
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell className="hidden sm:table-cell">{product.sku}</TableCell>
                   <TableCell className="text-right">{product.stock}</TableCell>
-                  <TableCell className="text-right">${product.salePrice.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{currencySymbol}{product.salePrice.toFixed(2)}</TableCell>
                   <TableCell className="hidden md:table-cell">
                     {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : 'N/A'}
                   </TableCell>

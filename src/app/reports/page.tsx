@@ -14,12 +14,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Printer, Loader2 } from "lucide-react"
 import PageHeader from "@/components/page-header"
-import { getSales, getExpenses } from "@/lib/firestore"
-import type { Sale, Expense } from "@/lib/types"
+import { getSales, getExpenses, getAppSettings, getCurrencySymbol } from "@/lib/firestore"
+import type { Sale, Expense, AppSettings } from "@/lib/types"
 
 export default function ReportsPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,9 +35,10 @@ export default function ReportsPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [salesData, expensesData] = await Promise.all([getSales(), getExpenses()]);
+        const [salesData, expensesData, appSettings] = await Promise.all([getSales(), getExpenses(), getAppSettings()]);
         setSales(salesData);
         setExpenses(expensesData);
+        setSettings(appSettings);
       } catch (err) {
         console.error(err);
         setError("Failed to load report data.");
@@ -51,6 +53,7 @@ export default function ReportsPage() {
     window.print();
   }
 
+  const currencySymbol = getCurrencySymbol(settings?.currency);
   const filteredSales = sales.filter(s => s.date >= startDate && s.date <= endDate);
   const filteredExpenses = expenses.filter(e => e.date >= startDate && e.date <= endDate);
   const totalSales = filteredSales.reduce((acc, s) => acc + s.total, 0);
@@ -91,7 +94,7 @@ export default function ReportsPage() {
       <div id="report-content" className="space-y-8">
         <Card className="print:shadow-none print:border-none">
             <CardHeader>
-                <CardTitle className="font-headline text-2xl">JS Glow - Financial Report</CardTitle>
+                <CardTitle className="font-headline text-2xl">{settings?.appName || 'JS Glow'} - Financial Report</CardTitle>
                 <CardDescription>
                     Report for the period from {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}
                 </CardDescription>
@@ -99,15 +102,15 @@ export default function ReportsPage() {
             <CardContent className="grid gap-4 @md:grid-cols-3">
                 <div className="p-4 rounded-lg bg-green-50 border border-green-200">
                     <p className="text-sm font-medium text-green-800">Total Sales</p>
-                    <p className="text-2xl font-bold text-green-900">${totalSales.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-green-900">{currencySymbol}{totalSales.toLocaleString()}</p>
                 </div>
                 <div className="p-4 rounded-lg bg-red-50 border border-red-200">
                     <p className="text-sm font-medium text-red-800">Total Expenses</p>
-                    <p className="text-2xl font-bold text-red-900">${totalExpenses.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-red-900">{currencySymbol}{totalExpenses.toLocaleString()}</p>
                 </div>
                 <div className={`p-4 rounded-lg ${profitLoss >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
                     <p className={`text-sm font-medium ${profitLoss >= 0 ? 'text-blue-800' : 'text-orange-800'}`}>Profit / Loss</p>
-                    <p className={`text-2xl font-bold ${profitLoss >= 0 ? 'text-blue-900' : 'text-orange-900'}`}>${profitLoss.toLocaleString()}</p>
+                    <p className={`text-2xl font-bold ${profitLoss >= 0 ? 'text-blue-900' : 'text-orange-900'}`}>{currencySymbol}{profitLoss.toLocaleString()}</p>
                 </div>
             </CardContent>
         </Card>
@@ -131,7 +134,7 @@ export default function ReportsPage() {
                                 <tr key={s.id} className="border-b">
                                     <td className="p-2">{new Date(s.date).toLocaleDateString()}</td>
                                     <td className="p-2">{s.customerName}</td>
-                                    <td className="text-right p-2">${s.total.toLocaleString()}</td>
+                                    <td className="text-right p-2">{currencySymbol}{s.total.toLocaleString()}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -157,7 +160,7 @@ export default function ReportsPage() {
                                 <tr key={e.id} className="border-b">
                                     <td className="p-2">{new Date(e.date).toLocaleDateString()}</td>
                                     <td className="p-2">{e.category}</td>
-                                    <td className="text-right p-2">${e.amount.toLocaleString()}</td>
+                                    <td className="text-right p-2">{currencySymbol}{e.amount.toLocaleString()}</td>
                                 </tr>
                             ))}
                         </tbody>

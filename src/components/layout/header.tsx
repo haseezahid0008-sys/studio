@@ -18,8 +18,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import * as React from 'react';
-
+import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -41,15 +41,23 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { navItems } from './sidebar';
 import { useAuth } from '@/hooks/use-auth';
+import { useTheme } from 'next-themes';
+import { getAppSettings } from '@/lib/firestore';
+import type { AppSettings } from '@/lib/types';
+
 
 export default function Header() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const pageTitle =
-    navItems.find((item) => item.href === pathname)?.label || 'Dashboard';
+  const { theme } = useTheme();
+  const [settings, setSettings] = useState<AppSettings | null>(null);
 
-  const breadcrumbSegments = pathname.split('/').filter(Boolean);
+  useEffect(() => {
+    getAppSettings().then(setSettings);
+  }, []);
 
+  const logoUrl = theme === 'dark' ? settings?.logoDark : settings?.logoLight;
+  
   const isAuthPage = pathname === '/login' || pathname === '/signup';
 
   if (isAuthPage) return null;
@@ -70,8 +78,12 @@ export default function Header() {
               href="/"
               className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
             >
-              <Package2 className="h-5 w-5 transition-all group-hover:scale-110" />
-              <span className="sr-only">JS Glow</span>
+              {logoUrl ? (
+                <Image src={logoUrl} alt="Logo" width={24} height={24} className="transition-all group-hover:scale-110" />
+              ) : (
+                <Package2 className="h-5 w-5 transition-all group-hover:scale-110" />
+              )}
+              <span className="sr-only">{settings?.appName || 'JS Glow'}</span>
             </Link>
             {navItems.map((item) => (
               <Link
@@ -93,7 +105,7 @@ export default function Header() {
               <Link href="/">Dashboard</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
-          {breadcrumbSegments.map((segment, index) => (
+          {pathname.split('/').filter(Boolean).map((segment, index) => (
              <React.Fragment key={segment}>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
@@ -143,5 +155,3 @@ export default function Header() {
     </header>
   );
 }
-
-    

@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,14 +11,26 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
+import { useTheme } from 'next-themes';
+import { getAppSettings } from '@/lib/firestore';
+import type { AppSettings } from '@/lib/types';
+
 
 export default function SignupPage() {
   const router = useRouter();
   const { signup } = useAuth();
+  const { theme } = useTheme();
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getAppSettings().then(setSettings);
+  }, []);
+
+  const logoUrl = theme === 'dark' ? settings?.authLogoDark : settings?.authLogoLight;
 
   const handleSignup = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -34,6 +46,18 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   };
+  
+  if (settings === null) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+        </div>
+      )
+  }
+
+  if (!settings.signupVisible) {
+      notFound();
+  }
 
   return (
     <div className="w-full h-screen lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
@@ -50,6 +74,7 @@ export default function SignupPage() {
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
+             {logoUrl && <Image src={logoUrl} alt="Logo" width={48} height={48} className="mx-auto" />}
             <h1 className="text-3xl font-bold font-headline">Sign Up</h1>
             <p className="text-balance text-muted-foreground">
               Create an account to get started.
@@ -96,4 +121,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

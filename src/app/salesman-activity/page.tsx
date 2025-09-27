@@ -18,10 +18,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { getSalesmen, getSales } from "@/lib/firestore"
+import { getSalesmen, getSales, getAppSettings, getCurrencySymbol } from "@/lib/firestore"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import PageHeader from "@/components/page-header"
-import type { Salesman, Sale } from "@/lib/types";
+import type { Salesman, Sale, AppSettings } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 
 type SalesmanData = Salesman & {
@@ -33,6 +33,7 @@ type SalesmanData = Salesman & {
 
 export default function SalesmanActivityPage() {
   const [salesmanData, setSalesmanData] = useState<SalesmanData[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +41,8 @@ export default function SalesmanActivityPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [salesmen, sales] = await Promise.all([getSalesmen(), getSales()]);
+        const [salesmen, sales, appSettings] = await Promise.all([getSalesmen(), getSales(), getAppSettings()]);
+        setSettings(appSettings);
 
         const data = salesmen.map(salesman => {
           const salesmanSales = sales.filter(s => s.salesmanName === salesman.name);
@@ -71,6 +73,8 @@ export default function SalesmanActivityPage() {
     }
     fetchData();
   }, []);
+
+  const currencySymbol = getCurrencySymbol(settings?.currency);
 
   return (
     <>
@@ -123,7 +127,7 @@ export default function SalesmanActivityPage() {
                      <p className="text-xs text-muted-foreground"> at {sm.lastActivity}</p>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">{sm.totalSales}</TableCell>
-                  <TableCell className="text-right">${sm.totalRevenue.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{currencySymbol}{sm.totalRevenue.toLocaleString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

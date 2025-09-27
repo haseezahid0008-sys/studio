@@ -23,13 +23,14 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { getSales } from "@/lib/firestore"
+import { getSales, getAppSettings, getCurrencySymbol } from "@/lib/firestore"
 import PageHeader from "@/components/page-header"
-import type { Sale } from "@/lib/types";
+import type { Sale, AppSettings } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 export default function SalesPage() {
   const [allSales, setAllSales] = useState<Sale[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +38,12 @@ export default function SalesPage() {
     const fetchSales = async () => {
       try {
         setIsLoading(true);
-        const salesData = await getSales();
+        const [salesData, appSettings] = await Promise.all([
+            getSales(),
+            getAppSettings()
+        ]);
         setAllSales(salesData);
+        setSettings(appSettings);
       } catch (err) {
         setError("Failed to fetch sales. Please try again later.");
         console.error(err);
@@ -50,6 +55,7 @@ export default function SalesPage() {
   }, []);
   
   const pendingSales = allSales.filter(s => s.total > s.amountPaid);
+  const currencySymbol = getCurrencySymbol(settings?.currency);
 
   return (
     <Tabs defaultValue="all">
@@ -89,10 +95,10 @@ export default function SalesPage() {
           ) : (
             <>
                 <TabsContent value="all">
-                    <SalesTable title="All Sales" description="A list of all sales transactions." salesData={allSales} />
+                    <SalesTable title="All Sales" description="A list of all sales transactions." salesData={allSales} currencySymbol={currencySymbol} />
                 </TabsContent>
                 <TabsContent value="pending">
-                    <SalesTable title="Pending Payments" description="A list of sales with outstanding payments." salesData={pendingSales} />
+                    <SalesTable title="Pending Payments" description="A list of sales with outstanding payments." salesData={pendingSales} currencySymbol={currencySymbol} />
                 </TabsContent>
             </>
         )}
@@ -101,7 +107,7 @@ export default function SalesPage() {
 }
 
 
-function SalesTable({ title, description, salesData }: { title: string, description: string, salesData: Sale[] }) {
+function SalesTable({ title, description, salesData, currencySymbol }: { title: string, description: string, salesData: Sale[], currencySymbol: string }) {
   return (
     <Card>
       <CardHeader>
@@ -137,9 +143,9 @@ function SalesTable({ title, description, salesData }: { title: string, descript
                 <TableCell className="hidden md:table-cell">
                   {new Date(sale.date).toLocaleDateString()}
                 </TableCell>
-                <TableCell className="text-right">${sale.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{currencySymbol}{sale.total.toFixed(2)}</TableCell>
                 <TableCell className="text-right font-semibold text-destructive">
-                  ${(sale.total - sale.amountPaid).toFixed(2)}
+                  {currencySymbol}{(sale.total - sale.amountPaid).toFixed(2)}
                 </TableCell>
               </TableRow>
             ))}

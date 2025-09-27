@@ -7,11 +7,18 @@ import Header from '@/components/layout/header';
 import { AuthContextProvider } from '@/hooks/use-auth';
 import { AuthProvider } from '@/components/auth/auth-provider';
 import { ThemeProvider } from '@/components/theme-provider';
+import { getAppSettings } from '@/lib/firestore';
 
-export const metadata: Metadata = {
-  title: 'JS Glow Dashboard',
-  description: 'Sales & Inventory Management for JS Glow',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getAppSettings();
+  return {
+    title: settings.appName || 'JS Glow Dashboard',
+    description: `Sales & Inventory Management for ${settings.appName || 'JS Glow'}`,
+    icons: {
+      icon: settings.favicon || '/favicon.ico',
+    },
+  };
+}
 
 export default function RootLayout({
   children,

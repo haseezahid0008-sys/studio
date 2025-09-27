@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -18,13 +18,20 @@ import {
   calculateDailyProfitLoss,
   type CalculateDailyProfitLossOutput,
 } from "@/ai/flows/calculate-daily-profit-loss";
+import { getAppSettings, getCurrencySymbol } from "@/lib/firestore";
+import type { AppSettings } from "@/lib/types";
 
 export function ProfitLossCalculator() {
   const [sales, setSales] = useState("");
   const [expenses, setExpenses] = useState("");
   const [result, setResult] = useState<CalculateDailyProfitLossOutput | null>(null);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getAppSettings().then(setSettings);
+  }, []);
 
   const handleCalculate = async () => {
     setIsLoading(true);
@@ -50,6 +57,8 @@ export function ProfitLossCalculator() {
       setIsLoading(false);
     }
   };
+
+  const currencySymbol = getCurrencySymbol(settings?.currency);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -118,7 +127,7 @@ export function ProfitLossCalculator() {
                 result.isProfitable ? "text-green-700" : "text-red-700"
               }`}
             >
-              {result.isProfitable ? "Profit" : "Loss"}: ${Math.abs(result.profitLoss).toLocaleString()}
+              {result.isProfitable ? "Profit" : "Loss"}: {currencySymbol}{Math.abs(result.profitLoss).toLocaleString()}
             </CardTitle>
             <CardDescription className="mt-2 text-lg">
               The day was {result.isProfitable ? "profitable" : "not profitable"}.

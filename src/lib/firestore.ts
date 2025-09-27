@@ -55,7 +55,7 @@ export const getSales = async (): Promise<Sale[]> => {
         return { 
             id: doc.id, 
             ...data,
-            date: (data.date as Timestamp).toDate().toISOString().split('T')[0] // Convert timestamp to string
+            date: (data.date as Timestamp)?.toDate().toISOString().split('T')[0] // Convert timestamp to string
         } as Sale
     });
 };
@@ -79,7 +79,7 @@ export const getExpenses = async (): Promise<Expense[]> => {
         return { 
             id: doc.id, 
             ...data,
-            date: (data.date as Timestamp).toDate().toISOString().split('T')[0] // Convert timestamp to string
+            date: (data.date as Timestamp)?.toDate().toISOString().split('T')[0] // Convert timestamp to string
         } as Expense
     });
 };
@@ -103,20 +103,27 @@ export const getSalesmen = async (): Promise<Salesman[]> => {
 // User functions
 export const addUser = async (user: AppUser) => {
     const userRef = doc(db, 'users', user.uid);
-    return await setDoc(userRef, user);
+    return await setDoc(userRef, user, { merge: true });
 }
 
 
 // App Settings functions
 const settingsDocRef = doc(db, 'settings', 'appSettings');
 
-export const getAppSettings = async (): Promise<AppSettings> => {
+let cachedSettings: AppSettings | null = null;
+
+export const getAppSettings = async (forceRefresh = false): Promise<AppSettings> => {
+    if (cachedSettings && !forceRefresh) {
+        return cachedSettings;
+    }
+
     const docSnap = await getDoc(settingsDocRef);
     if (docSnap.exists()) {
-        return docSnap.data() as AppSettings;
+        cachedSettings = docSnap.data() as AppSettings;
+        return cachedSettings;
     }
     // Return default settings if they don't exist
-    return {
+    const defaultSettings: AppSettings = {
         appName: 'GLOW',
         logoLight: 'https://iili.io/KYqQC1R.png',
         logoDark: 'https://iili.io/KYkW0NV.png',
@@ -126,8 +133,20 @@ export const getAppSettings = async (): Promise<AppSettings> => {
         currency: 'pkr',
         signupVisible: true,
     };
+    cachedSettings = defaultSettings;
+    return defaultSettings;
 };
 
 export const updateAppSettings = async (settings: Partial<AppSettings>) => {
+    cachedSettings = null; // Invalidate cache
     return await setDoc(settingsDocRef, settings, { merge: true });
 };
+
+export const getCurrencySymbol = (currencyCode?: string): string => {
+    switch (currencyCode) {
+        case 'pkr': return '₨';
+        case 'usd': return '$';
+        case 'eur': return '€';
+        default: return '$';
+    }
+}

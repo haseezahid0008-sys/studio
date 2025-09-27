@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,14 +11,25 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
+import { useTheme } from 'next-themes';
+import { getAppSettings } from '@/lib/firestore';
+import type { AppSettings } from '@/lib/types';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { theme } = useTheme();
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getAppSettings().then(setSettings);
+  }, []);
+
+  const logoUrl = theme === 'dark' ? settings?.authLogoDark : settings?.authLogoLight;
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -40,6 +51,7 @@ export default function LoginPage() {
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
+            {logoUrl && <Image src={logoUrl} alt="Logo" width={48} height={48} className="mx-auto" />}
             <h1 className="text-3xl font-bold font-headline">Login</h1>
             <p className="text-balance text-muted-foreground">
               Enter your email below to login to your account
@@ -77,12 +89,14 @@ export default function LoginPage() {
               Login
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className="underline">
-              Sign up
-            </Link>
-          </div>
+          {settings?.signupVisible && (
+            <div className="mt-4 text-center text-sm">
+              Don&apos;t have an account?{' '}
+              <Link href="/signup" className="underline">
+                Sign up
+              </Link>
+            </div>
+          )}
         </div>
       </div>
       <div className="hidden bg-muted lg:block">

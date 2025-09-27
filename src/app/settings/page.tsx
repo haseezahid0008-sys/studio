@@ -42,7 +42,8 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const [isSavingSecurity, setIsSavingSecurity] = useState(false);
   const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -69,23 +70,45 @@ export default function SettingsPage() {
     setSettings(prev => ({...prev, [key]: value}));
   }
 
-  const handleSave = async (section: string) => {
-    setIsSaving(true);
+  const handleSaveBranding = async () => {
+    setIsSavingBranding(true);
     try {
       await updateAppSettings(settings);
       toast({
         title: "Success",
-        description: `${section} settings saved successfully.`,
+        description: `Branding settings saved successfully.`,
       })
+      // force reload to apply favicon and other meta changes
+      window.location.reload();
     } catch (error) {
-      console.error(`Failed to save ${section} settings`, error);
+      console.error(`Failed to save Branding settings`, error);
       toast({
         title: "Error",
-        description: `Failed to save ${section} settings. Please try again.`,
+        description: `Failed to save Branding settings. Please try again.`,
         variant: "destructive"
       })
     } finally {
-      setIsSaving(false);
+      setIsSavingBranding(false);
+    }
+  }
+
+   const handleSaveSecurity = async () => {
+    setIsSavingSecurity(true);
+    try {
+      await updateAppSettings({signupVisible: settings.signupVisible});
+      toast({
+        title: "Success",
+        description: `Security settings saved successfully.`,
+      })
+    } catch (error) {
+      console.error(`Failed to save Security settings`, error);
+      toast({
+        title: "Error",
+        description: `Failed to save Security settings. Please try again.`,
+        variant: "destructive"
+      })
+    } finally {
+      setIsSavingSecurity(false);
     }
   }
 
@@ -242,33 +265,33 @@ export default function SettingsPage() {
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="appName">Application Name</Label>
-            <Input id="appName" value={settings.appName || ''} onChange={e => handleSettingsChange('appName', e.target.value)} disabled={isSaving}/>
+            <Input id="appName" value={settings.appName || ''} onChange={e => handleSettingsChange('appName', e.target.value)} disabled={isSavingBranding}/>
           </div>
           <div className="space-y-2">
             <Label htmlFor="logoLight">Sidebar Logo URL (Light Mode)</Label>
-            <Input id="logoLight" value={settings.logoLight || ''} onChange={e => handleSettingsChange('logoLight', e.target.value)} disabled={isSaving}/>
+            <Input id="logoLight" value={settings.logoLight || ''} onChange={e => handleSettingsChange('logoLight', e.target.value)} disabled={isSavingBranding}/>
              <p className="text-sm text-muted-foreground">Your logo will be displayed in the sidebar. Recommended size: 32x32 pixels.</p>
           </div>
            <div className="space-y-2">
             <Label htmlFor="logoDark">Sidebar Logo URL (Dark Mode)</Label>
-            <Input id="logoDark" value={settings.logoDark || ''} onChange={e => handleSettingsChange('logoDark', e.target.value)} disabled={isSaving}/>
+            <Input id="logoDark" value={settings.logoDark || ''} onChange={e => handleSettingsChange('logoDark', e.target.value)} disabled={isSavingBranding}/>
           </div>
            <div className="space-y-2">
             <Label htmlFor="authLogoLight">Auth Page Logo URL (Light Mode)</Label>
-            <Input id="authLogoLight" value={settings.authLogoLight || ''} onChange={e => handleSettingsChange('authLogoLight', e.target.value)} disabled={isSaving}/>
+            <Input id="authLogoLight" value={settings.authLogoLight || ''} onChange={e => handleSettingsChange('authLogoLight', e.target.value)} disabled={isSavingBranding}/>
           </div>
            <div className="space-y-2">
             <Label htmlFor="authLogoDark">Auth Page Logo URL (Dark Mode)</Label>
-            <Input id="authLogoDark" value={settings.authLogoDark || ''} onChange={e => handleSettingsChange('authLogoDark', e.target.value)} disabled={isSaving}/>
+            <Input id="authLogoDark" value={settings.authLogoDark || ''} onChange={e => handleSettingsChange('authLogoDark', e.target.value)} disabled={isSavingBranding}/>
           </div>
           <div className="space-y-2">
             <Label htmlFor="favicon">Favicon URL</Label>
-            <Input id="favicon" value={settings.favicon || ''} onChange={e => handleSettingsChange('favicon', e.target.value)} disabled={isSaving}/>
+            <Input id="favicon" value={settings.favicon || ''} onChange={e => handleSettingsChange('favicon', e.target.value)} disabled={isSavingBranding}/>
             <p className="text-sm text-muted-foreground">The icon that appears in the browser tab.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="currency">Currency</Label>
-            <Select value={settings.currency || 'pkr'} onValueChange={value => handleSettingsChange('currency', value)} disabled={isSaving}>
+            <Select value={settings.currency || 'pkr'} onValueChange={value => handleSettingsChange('currency', value)} disabled={isSavingBranding}>
               <SelectTrigger className="w-[280px]">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
@@ -282,8 +305,8 @@ export default function SettingsPage() {
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button onClick={() => handleSave("Branding")} disabled={isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button onClick={handleSaveBranding} disabled={isSavingBranding}>
+            {isSavingBranding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Branding
           </Button>
         </CardFooter>
@@ -304,13 +327,13 @@ export default function SettingsPage() {
                   id="signup-visibility" 
                   checked={settings.signupVisible} 
                   onCheckedChange={value => handleSettingsChange('signupVisible', value)} 
-                  disabled={isSaving}
+                  disabled={isSavingSecurity}
                 />
             </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-            <Button onClick={() => handleSave("Security")} disabled={isSaving}>
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleSaveSecurity} disabled={isSavingSecurity}>
+              {isSavingSecurity && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Security Settings
             </Button>
         </CardFooter>

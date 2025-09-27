@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
+import Image from 'next/image';
 import {
   Tooltip,
   TooltipContent,
@@ -24,6 +24,10 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
+import { useTheme } from 'next-themes';
+import { getAppSettings } from '@/lib/firestore';
+import { useEffect, useState } from 'react';
+import type { AppSettings } from '@/lib/types';
 
 export const navItems = [
   { href: '/', icon: Home, label: 'Dashboard' },
@@ -38,6 +42,14 @@ export const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+
+  useEffect(() => {
+    getAppSettings().then(setSettings);
+  }, []);
+
+  const logoUrl = theme === 'dark' ? settings?.logoDark : settings?.logoLight;
   
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   if (isAuthPage) return null;
@@ -50,8 +62,12 @@ export function Sidebar() {
           href="/"
           className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
         >
-          <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
-          <span className="sr-only">JS Glow</span>
+          {logoUrl ? (
+             <Image src={logoUrl} alt="Logo" width={32} height={32} className="transition-all group-hover:scale-110" />
+          ) : (
+            <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
+          )}
+          <span className="sr-only">{settings?.appName || 'JS Glow'}</span>
         </Link>
         <TooltipProvider>
           {navItems.map((item) => (

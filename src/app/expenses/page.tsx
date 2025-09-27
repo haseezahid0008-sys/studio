@@ -18,13 +18,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { getExpenses } from "@/lib/firestore"
+import { getExpenses, getAppSettings, getCurrencySymbol } from "@/lib/firestore"
 import PageHeader from "@/components/page-header"
-import type { Expense } from "@/lib/types";
+import type { Expense, AppSettings } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,8 +33,12 @@ export default function ExpensesPage() {
     const fetchExpenses = async () => {
       try {
         setIsLoading(true);
-        const expensesData = await getExpenses();
+        const [expensesData, appSettings] = await Promise.all([
+          getExpenses(),
+          getAppSettings()
+        ]);
         setExpenses(expensesData);
+        setSettings(appSettings);
       } catch (err) {
         setError("Failed to fetch expenses. Please try again later.");
         console.error(err);
@@ -43,6 +48,8 @@ export default function ExpensesPage() {
     };
     fetchExpenses();
   }, []);
+
+  const currencySymbol = getCurrencySymbol(settings?.currency);
 
   return (
     <>
@@ -88,7 +95,7 @@ export default function ExpensesPage() {
                     {expense.notes}
                   </TableCell>
                   <TableCell className="text-right">
-                    ${expense.amount.toLocaleString()}
+                    {currencySymbol}{expense.amount.toLocaleString()}
                   </TableCell>
                 </TableRow>
               ))}
