@@ -95,44 +95,49 @@ export const getSalesByCustomer = async (customerId: string): Promise<Sale[]> =>
 
 export const addSale = async (sale: Omit<Sale, 'id' | 'salesmanName' | 'customerName'>, salesmanId: string) => {
     return await runTransaction(db, async (transaction) => {
-        // 1. Get Salesman and Customer Info
+        // PRE-TRANSACTION READS (Not needing transactional consistency)
         const salesmanDoc = await getUser(salesmanId);
         const salesmanName = salesmanDoc?.name || salesmanDoc?.email || 'N/A';
+
+        // --- TRANSACTION STARTS ---
+        // 1. ALL TRANSACTIONAL READS FIRST
         const customerRef = doc(db, 'customers', sale.customerId);
         const customerSnap = await transaction.get(customerRef);
+
         if (!customerSnap.exists()) {
             throw new Error("Customer not found!");
         }
-        const customerName = customerSnap.data().name;
-        const customerPhone = customerSnap.data().phone;
 
+        const productRefs = sale.items.map(item => doc(db, 'products', item.productId));
+        const productSnaps = await Promise.all(productRefs.map(ref => transaction.get(ref)));
 
+        for (let i = 0; i < productSnaps.length; i++) {
+            if (!productSnaps[i].exists()) {
+                throw new Error(`Product with ID ${sale.items[i].productId} not found.`);
+            }
+        }
+
+        // --- ALL TRANSACTIONAL WRITES LAST ---
         // 2. Prepare Sale Document
         const newSaleRef = doc(salesCollection);
         const saleWithTimestamp = {
             ...sale,
             salesmanId,
             salesmanName,
-            customerName,
-            customerPhone,
+            customerName: customerSnap.data().name,
+            customerPhone: customerSnap.data().phone,
             date: Timestamp.fromDate(new Date(sale.date)),
         };
         transaction.set(newSaleRef, saleWithTimestamp);
 
         // 3. Update stock for each item in the sale
-        for (const item of sale.items) {
-            if (item.productId && item.quantity > 0) {
-                const productRef = doc(db, 'products', item.productId);
-                const productDoc = await transaction.get(productRef);
-
-                if (productDoc.exists()) {
-                    const currentStock = productDoc.data().stock as number;
-                    const newStock = currentStock - item.quantity;
-                    transaction.update(productRef, { stock: newStock });
-                } else {
-                    throw new Error(`Product with ID ${item.productId} not found.`);
-                }
-            }
+        for (let i = 0; i < sale.items.length; i++) {
+            const item = sale.items[i];
+            const productSnap = productSnaps[i];
+            const productRef = productRefs[i];
+            const currentStock = productSnap.data()?.stock as number;
+            const newStock = currentStock - item.quantity;
+            transaction.update(productRef, { stock: newStock });
         }
         
         // 4. Update customer's total due amount
