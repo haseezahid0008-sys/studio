@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea"
 export default function EditWorkerTaskPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
+  const taskId = params.id;
   const [task, setTask] = useState<WorkerTask | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,7 +33,7 @@ export default function EditWorkerTaskPage({ params }: { params: { id: string } 
     const fetchTask = async () => {
       try {
         setIsLoading(true);
-        const taskData = await getWorkerTask(params.id);
+        const taskData = await getWorkerTask(taskId);
         if (taskData) {
           setTask(taskData);
         } else {
@@ -46,7 +47,7 @@ export default function EditWorkerTaskPage({ params }: { params: { id: string } 
       }
     };
     fetchTask();
-  }, [params.id]);
+  }, [taskId]);
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -61,7 +62,7 @@ export default function EditWorkerTaskPage({ params }: { params: { id: string } 
     };
 
     try {
-        await updateWorkerTask(params.id, updatedData);
+        await updateWorkerTask(taskId, updatedData);
         toast({
             title: "Success",
             description: "Task updated successfully.",

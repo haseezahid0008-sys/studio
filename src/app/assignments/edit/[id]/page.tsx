@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import {
@@ -24,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea"
 export default function EditAssignmentPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
+  const assignmentId = params.id;
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +33,7 @@ export default function EditAssignmentPage({ params }: { params: { id: string } 
     const fetchAssignment = async () => {
       try {
         setIsLoading(true);
-        const assignmentData = await getAssignment(params.id);
+        const assignmentData = await getAssignment(assignmentId);
         if (assignmentData) {
           setAssignment(assignmentData);
         } else {
@@ -47,7 +47,7 @@ export default function EditAssignmentPage({ params }: { params: { id: string } 
       }
     };
     fetchAssignment();
-  }, [params.id]);
+  }, [assignmentId]);
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -63,7 +63,7 @@ export default function EditAssignmentPage({ params }: { params: { id: string } 
     };
 
     try {
-        await updateAssignment(params.id, updatedData);
+        await updateAssignment(assignmentId, updatedData);
         toast({
             title: "Success",
             description: "Assignment updated successfully.",

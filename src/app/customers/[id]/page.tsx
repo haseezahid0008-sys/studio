@@ -113,7 +113,7 @@ function AddPaymentModal({ sale, onPaymentAdded }: { sale: Sale, onPaymentAdded:
     )
 }
 
-function SaleItemWithPayments({ sale, currencySymbol }: { sale: Sale, currencySymbol: string, onRefresh: () => void }) {
+function SaleItemWithPayments({ sale, currencySymbol, onRefresh }: { sale: Sale, currencySymbol: string, onRefresh: () => void }) {
     const [payments, setPayments] = useState<Payment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -154,7 +154,7 @@ function SaleItemWithPayments({ sale, currencySymbol }: { sale: Sale, currencySy
                 <div className="p-4 bg-muted/50 rounded-lg">
                     <div className="flex justify-between items-center mb-4">
                         <h4 className="font-semibold">Payment History</h4>
-                        <AddPaymentModal sale={sale} onPaymentAdded={() => { handleRefresh(); }} />
+                        <AddPaymentModal sale={sale} onPaymentAdded={() => { onRefresh(); }} />
                     </div>
                     {isLoading ? <Loader2 className="animate-spin" /> : (
                         payments.length > 0 ? (
@@ -190,6 +190,7 @@ function SaleItemWithPayments({ sale, currencySymbol }: { sale: Sale, currencySy
 export default function CustomerDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
+  const customerId = params.id;
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -200,8 +201,8 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
       try {
         setIsLoading(true);
         const [customerData, salesData, appSettings] = await Promise.all([
-          getCustomer(params.id),
-          getSalesByCustomer(params.id),
+          getCustomer(customerId),
+          getSalesByCustomer(customerId),
           getAppSettings()
         ]);
         
@@ -222,7 +223,7 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
 
   useEffect(() => {
     fetchData();
-  }, [params.id]);
+  }, [customerId]);
   
   if (isLoading) {
     return (

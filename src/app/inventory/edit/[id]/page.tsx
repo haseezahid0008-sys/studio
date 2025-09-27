@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast"
 export default function EditProductPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
+  const productId = params.id;
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -31,7 +32,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     const fetchProduct = async () => {
       try {
         setIsLoading(true);
-        const productData = await getProduct(params.id);
+        const productData = await getProduct(productId);
         if (productData) {
           setProduct(productData);
         } else {
@@ -45,7 +46,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       }
     };
     fetchProduct();
-  }, [params.id]);
+  }, [productId]);
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -66,7 +67,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     };
 
     try {
-        await updateProduct(params.id, updatedData);
+        await updateProduct(productId, updatedData);
         toast({
             title: "Success",
             description: "Product updated successfully.",
