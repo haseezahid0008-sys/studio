@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -34,6 +35,10 @@ export const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  if (isAuthPage) return null;
+
 
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
