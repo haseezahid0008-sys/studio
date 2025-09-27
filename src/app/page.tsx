@@ -16,6 +16,10 @@ import {
   Wrench,
   CheckCircle,
   Clock,
+  BrainCircuit,
+  TrendingUp,
+  TrendingDown,
+  CircleOff,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +45,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
+import { analyzeFinancials, type AnalyzeFinancialsOutput } from '@/ai/flows/analyze-financials';
 
 function SalesmanDashboard({ assignments, userId }: { assignments: Assignment[], userId: string }) {
     const { toast } = useToast();
@@ -222,6 +227,80 @@ function WorkerDashboard({ tasks, userId }: { tasks: WorkerTask[], userId: strin
         )}
     </div>
   );
+}
+
+function AIAnalysisCard({ totalRevenue, totalExpenses }: { totalRevenue: number, totalExpenses: number }) {
+  const [analysis, setAnalysis] = useState<AnalyzeFinancialsOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const runAnalysis = async () => {
+      setIsLoading(true);
+      try {
+        const result = await analyzeFinancials({ totalRevenue, totalExpenses });
+        setAnalysis(result);
+      } catch (e) {
+        console.error("AI analysis failed", e);
+        setAnalysis(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (totalRevenue > 0 || totalExpenses > 0) {
+      runAnalysis();
+    } else {
+        setIsLoading(false);
+    }
+  }, [totalRevenue, totalExpenses]);
+  
+  const StatusIcon = () => {
+      if (!analysis) return <BrainCircuit className="h-6 w-6 text-muted-foreground" />;
+      switch (analysis.status) {
+          case 'profit': return <TrendingUp className="h-6 w-6 text-green-500" />;
+          case 'loss': return <TrendingDown className="h-6 w-6 text-red-500" />;
+          case 'breakeven': return <CircleOff className="h-6 w-6 text-yellow-500" />;
+          default: return <BrainCircuit className="h-6 w-6 text-muted-foreground" />;
+      }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center">
+          <div className="grid gap-2">
+            <CardTitle className="font-headline">AI Financial Analyst</CardTitle>
+            <CardDescription>
+                An AI-powered summary of your financial status.
+            </CardDescription>
+          </div>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        {isLoading ? (
+            <div className="flex items-center gap-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Analyzing your data...</p>
+            </div>
+        ) : analysis ? (
+             <div className="flex items-start gap-4">
+                <StatusIcon />
+                <div className="grid gap-1">
+                <p className="text-sm font-medium leading-none capitalize">
+                    Status: {analysis.status}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                    {analysis.summary}
+                </p>
+                </div>
+            </div>
+        ) : (
+            <div className="flex items-center gap-4">
+                <BrainCircuit className="h-6 w-6 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Not enough data for analysis.</p>
+            </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 }
 
 
@@ -407,39 +486,42 @@ function AdminDashboard() {
               </Table>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline">Stock Alerts</CardTitle>
-              <CardDescription>
-                Products running low on inventory.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-8">
-              {stockAlerts.length > 0 ? (
-                stockAlerts.map((product) => (
-                  <div key={product.id} className="flex items-center gap-4">
-                    <AlertCircle className="h-6 w-6 text-destructive" />
-                    <div className="grid gap-1">
-                      <p className="text-sm font-medium leading-none">
-                        {product.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Stock: {product.stock} (Reorder at {product.reorderLevel})
-                      </p>
+          <div className="flex flex-col gap-4">
+            <AIAnalysisCard totalRevenue={totalRevenue} totalExpenses={totalExpenses} />
+            <Card>
+                <CardHeader>
+                <CardTitle className="font-headline">Stock Alerts</CardTitle>
+                <CardDescription>
+                    Products running low on inventory.
+                </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-8">
+                {stockAlerts.length > 0 ? (
+                    stockAlerts.map((product) => (
+                    <div key={product.id} className="flex items-center gap-4">
+                        <AlertCircle className="h-6 w-6 text-destructive" />
+                        <div className="grid gap-1">
+                        <p className="text-sm font-medium leading-none">
+                            {product.name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Stock: {product.stock} (Reorder at {product.reorderLevel})
+                        </p>
+                        </div>
+                        <Button asChild size="sm" className="ml-auto">
+                            <Link href="/inventory">Reorder</Link>
+                        </Button>
                     </div>
-                    <Button asChild size="sm" className="ml-auto">
-                        <Link href="/inventory">Reorder</Link>
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <div className="flex items-center gap-4">
-                    <Package className="h-6 w-6 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">All products are well-stocked.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))
+                ) : (
+                    <div className="flex items-center gap-4">
+                        <Package className="h-6 w-6 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">All products are well-stocked.</p>
+                    </div>
+                )}
+                </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>

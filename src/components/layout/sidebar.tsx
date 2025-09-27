@@ -63,7 +63,6 @@ export const allNavItems = [
   { href: '/expenses', icon: Coins, label: 'Expenses', roles: ['Admin', 'Manager', 'Cashier'] },
   { href: '/reports', icon: FileText, label: 'Reports', roles: ['Admin', 'Manager'] },
   { href: '/history', icon: History, label: 'History', roles: ['Admin', 'Manager'] },
-  { href: '/analysis', icon: BrainCircuit, label: 'P/L Analysis', roles: ['Admin', 'Manager'] },
 ];
 
 const salesmanNavItems = [
