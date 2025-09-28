@@ -19,18 +19,23 @@ export default function LiveTrackingPage() {
     const [salesmen, setSalesmen] = useState<AppUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     useEffect(() => {
         const fetchSalesmen = async () => {
             try {
-                setIsLoading(true);
+                // No need to set loading to true on interval refresh
                 const salesmenData = await getSalesmen();
                 setSalesmen(salesmenData);
             } catch (err) {
                 console.error(err);
                 setError('Failed to load salesmen data. Please try again.');
             } finally {
-                setIsLoading(false);
+                setIsLoading(false); // Only set loading to false after initial fetch
             }
         };
 
@@ -70,25 +75,29 @@ export default function LiveTrackingPage() {
                 <style>
                     {`.leaflet-container { height: 100%; width: 100%; z-index: 1; }`}
                 </style>
-                <MapContainer center={defaultCenter} zoom={6} scrollWheelZoom={true}>
-                    <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    {salesmenWithLocation.map(salesman => (
-                        <Marker
-                            key={salesman.uid}
-                            position={[salesman.lastLocation!.latitude, salesman.lastLocation!.longitude]}
-                        >
-                            <Popup>
-                                <div className="font-bold">{salesman.name}</div>
-                                <div>
-                                    Last updated: {formatDistanceToNow(new Date(salesman.lastLocation!.timestamp), { addSuffix: true })}
-                                </div>
-                            </Popup>
-                        </Marker>
-                    ))}
-                </MapContainer>
+                {isClient && (
+                    <MapContainer center={defaultCenter} zoom={6} scrollWheelZoom={true}>
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        {salesmenWithLocation.map(salesman => (
+                            <Marker
+                                key={salesman.uid}
+                                position={[salesman.lastLocation!.latitude, salesman.lastLocation!.longitude]}
+                            >
+                                <Popup>
+                                    <div className="font-bold">{salesman.name}</div>
+                                    {salesman.lastLocation?.timestamp && (
+                                        <div>
+                                            Last updated: {formatDistanceToNow(new Date(salesman.lastLocation.timestamp), { addSuffix: true })}
+                                        </div>
+                                    )}
+                                </Popup>
+                            </Marker>
+                        ))}
+                    </MapContainer>
+                )}
             </div>
         </>
     );
