@@ -59,7 +59,6 @@ export const allNavItems = [
   { href: '/customers', icon: Users, label: 'Customers', roles: ['Admin', 'Manager', 'Salesman'] },
   { href: '/assignments', icon: ClipboardList, label: 'Salesman Plans', roles: ['Admin', 'Manager'] },
   { href: '/salesman-activity', icon: UserCheck, label: 'Salesman Activity', roles: ['Admin', 'Manager'] },
-  { href: '/live-tracking', icon: Map, label: 'Live Tracking', roles: ['Admin', 'Manager'] },
   { href: '/worker-tasks', icon: Wrench, label: 'Worker Tasks', roles: ['Admin', 'Manager'] },
   { href: '/worker-progress', icon: BarChart, label: 'Worker Progress', roles: ['Admin', 'Manager'] },
   { href: '/inventory', icon: Package, label: 'Inventory', roles: ['Admin', 'Manager', 'Worker'] },
