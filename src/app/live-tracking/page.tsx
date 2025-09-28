@@ -10,7 +10,7 @@ import PageHeader from '@/components/page-header';
 import { formatDistanceToNow } from 'date-fns';
 
 // Dynamically import the map components to avoid SSR issues with Leaflet
-const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false, loading: () => <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div> });
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
@@ -49,11 +49,6 @@ export default function LiveTrackingPage() {
     const [salesmen, setSalesmen] = useState<AppUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
 
     useEffect(() => {
         const fetchSalesmen = async () => {
@@ -64,8 +59,7 @@ export default function LiveTrackingPage() {
                 console.error(err);
                 setError('Failed to load salesmen data. Please try again.');
             } finally {
-                // Set loading to false only on the initial load
-                if (isLoading) setIsLoading(false);
+                setIsLoading(false);
             }
         };
 
@@ -75,23 +69,15 @@ export default function LiveTrackingPage() {
         const interval = setInterval(fetchSalesmen, 30000);
         return () => clearInterval(interval);
 
-    }, [isLoading]); // Rerun effect if isLoading changes (only for initial setup)
+    }, []);
 
-    if (!isClient) {
-        return (
-            <div className="flex justify-center items-center h-96">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-        )
-    }
-    
     return (
         <>
             <PageHeader
                 title="Live Salesman Tracking"
                 description="View the real-time location of your sales team on the map."
             />
-            <div className="h-[calc(100vh-12rem)] w-full">
+            <div className="h-[calc(100vh-12rem)] w-full rounded-lg overflow-hidden border">
                 {isLoading ? (
                      <div className="flex justify-center items-center h-full">
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
