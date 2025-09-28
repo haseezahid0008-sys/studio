@@ -60,6 +60,11 @@ export type AppUser = {
   photoURL?: string;
   createdAt: Date;
   role?: Role;
+  lastLocation?: {
+    latitude: number;
+    longitude: number;
+    timestamp: number;
+  }
 }
 
 export type Customer = {

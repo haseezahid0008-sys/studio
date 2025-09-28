@@ -42,7 +42,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Sale, Product, Expense, AppSettings, AppUser, Assignment, WorkerTask } from '@/lib/types';
-import { getSales, getProducts, getExpenses, getAppSettings, getCurrencySymbol, getUser, getAssignments, getWorkerTasks, updateAssignment, updateWorkerTask } from '@/lib/firestore';
+import { getSales, getProducts, getExpenses, getAppSettings, getCurrencySymbol, getUser, getAssignments, getWorkerTasks, updateAssignment, updateWorkerTask, updateUserLocation } from '@/lib/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -56,6 +56,36 @@ function SalesmanDashboard({ assignments, userId }: { assignments: Assignment[],
     const [progressNotes, setProgressNotes] = useState(todaysAssignment?.progressNotes || "");
     const [status, setStatus] = useState(todaysAssignment?.status || "Pending");
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (!userId) return;
+
+        const handleSuccess = (position: GeolocationPosition) => {
+            const { latitude, longitude } = position.coords;
+            updateUserLocation(userId, {
+                latitude,
+                longitude,
+                timestamp: Date.now()
+            });
+        };
+
+        const handleError = (error: GeolocationPositionError) => {
+            console.error("Error getting location:", error.message);
+        };
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        };
+
+        const watcher = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
+
+        // Cleanup watcher on component unmount
+        return () => navigator.geolocation.clearWatch(watcher);
+
+    }, [userId]);
+
 
     const handleUpdate = async () => {
         if (!todaysAssignment) return;

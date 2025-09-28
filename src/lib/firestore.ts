@@ -266,6 +266,13 @@ export const getUser = async (uid: string): Promise<AppUser | null> => {
     return null;
 }
 
+export const updateUserLocation = async (uid: string, location: AppUser['lastLocation']) => {
+    const userRef = doc(db, 'users', uid);
+    return await updateDoc(userRef, {
+        lastLocation: location
+    });
+};
+
 // Customer Functions
 const customersCollection = collection(db, 'customers');
 
