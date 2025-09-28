@@ -39,6 +39,7 @@ import { useTheme } from 'next-themes';
 import { getAppSettings, getUser } from '@/lib/firestore';
 import type { AppSettings, AppUser, Role } from '@/lib/types';
 import { SidebarTrigger } from '../ui/sidebar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const salesmanNavItems = [
     { href: '/', icon: LayoutGrid, label: 'Dashboard', roles: ['Salesman'] },
@@ -124,7 +125,12 @@ export default function Header() {
             size="icon"
             className="overflow-hidden rounded-full"
           >
-            <User className="h-5 w-5" />
+            <Avatar className="h-full w-full">
+              <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'User'} />
+              <AvatarFallback>
+                {user?.displayName?.charAt(0).toUpperCase() || <User className="h-5 w-5" />}
+              </AvatarFallback>
+            </Avatar>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

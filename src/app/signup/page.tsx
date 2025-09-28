@@ -12,7 +12,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
-import { getAppSettings } from '@/lib/firestore';
+import { getAppSettings, uploadImage } from '@/lib/firestore';
 import type { AppSettings, Role } from '@/lib/types';
 import {
   Select,
@@ -33,6 +33,8 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role | ''>('');
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +43,14 @@ export default function SignupPage() {
   }, []);
 
   const logoUrl = theme === 'dark' ? settings?.authLogoDark : settings?.authLogoLight;
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        setProfileImage(file);
+        setImagePreview(URL.createObjectURL(file));
+    }
+  }
 
   const handleSignup = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -55,7 +65,11 @@ export default function SignupPage() {
     setIsLoading(true);
     setError(null);
     try {
-      await signup(email, password, name, role);
+      let photoURL: string | undefined = undefined;
+      if (profileImage) {
+          photoURL = await uploadImage(profileImage, `profile-pictures/${Date.now()}_${profileImage.name}`);
+      }
+      await signup(email, password, name, role, photoURL);
       router.push('/');
     } catch (error) {
       setError('Failed to sign up. The email might already be in use.');
@@ -81,7 +95,7 @@ export default function SignupPage() {
     <div className="w-full h-screen lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
        <div className="hidden bg-muted lg:block">
         <Image
-          src="https://placehold.co/1200x900/000000/FFFFFF/png"
+          src="https://picsum.photos/seed/signup/1200/900"
           alt="Image"
           width="1920"
           height="1080"
@@ -146,6 +160,11 @@ export default function SignupPage() {
                         ))}
                     </SelectContent>
                 </Select>
+            </div>
+             <div className="grid gap-2">
+                <Label htmlFor="profile-image">Profile Picture (Optional)</Label>
+                <Input id="profile-image" type="file" onChange={handleImageChange} accept="image/*" disabled={isLoading} />
+                {imagePreview && <Image src={imagePreview} alt="Profile preview" width={80} height={80} className="mt-2 rounded-full object-cover" />}
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={isLoading}>

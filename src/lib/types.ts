@@ -19,12 +19,13 @@ export type SaleItem = {
 };
 
 export type Sale = {
-  id: string;
+  id:string;
   date: string;
   salesmanId: string;
   salesmanName: string;
   customerId: string;
   customerName: string;
+  customerPhone?: string;
   items: SaleItem[];
   discount: number;
   total: number;
@@ -56,6 +57,7 @@ export type AppUser = {
   uid: string;
   email: string | null;
   name: string;
+  photoURL?: string;
   createdAt: Date;
   role?: Role;
 }

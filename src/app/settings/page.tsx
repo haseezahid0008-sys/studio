@@ -2,6 +2,7 @@
 'use client'
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getAppSettings, updateAppSettings, getUser, resetAllData } from "@/lib/firestore";
+import { getAppSettings, updateAppSettings, getUser, resetAllData, addUser, uploadImage } from "@/lib/firestore";
 import type { AppSettings, AppUser } from "@/lib/types";
 import { useTheme } from "next-themes";
 import { updateProfile } from "firebase/auth";
@@ -40,6 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
 export default function SettingsPage() {
@@ -49,6 +51,8 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Partial<AppSettings>>({});
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(user?.photoURL || null);
   
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -81,7 +85,18 @@ export default function SettingsPage() {
     if (user?.displayName) {
       setDisplayName(user.displayName);
     }
+    if (user?.photoURL) {
+      setImagePreview(user.photoURL);
+    }
   }, [user]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        setProfileImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+    }
+  }
 
 
   const handleSettingsChange = (key: keyof AppSettings, value: any) => {
@@ -134,11 +149,26 @@ export default function SettingsPage() {
     if (!user) return;
     setIsProfileSaving(true);
     try {
-      await updateProfile(user, { displayName });
+      let photoURL = user.photoURL;
+
+      if (profileImageFile) {
+        photoURL = await uploadImage(profileImageFile, `profile-pictures/${user.uid}_${profileImageFile.name}`);
+      }
+      
+      // Update Firebase Auth profile
+      await updateProfile(user, { displayName, photoURL: photoURL || undefined });
+      
+      // Update Firestore user document
+      if (appUser) {
+          await addUser({ ...appUser, name: displayName, photoURL: photoURL || undefined });
+      }
+
       toast({
         title: "Success",
         description: "Profile updated successfully.",
       });
+       // Force a reload to reflect changes everywhere
+      window.location.reload();
     } catch (error) {
        console.error("Failed to update profile", error);
       toast({
@@ -227,6 +257,16 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label>Profile Picture</Label>
+                <div className="flex items-center gap-4">
+                    <Avatar className="h-20 w-20">
+                        <AvatarImage src={imagePreview || undefined} alt={displayName} />
+                        <AvatarFallback>{displayName?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <Input id="profile-image" type="file" onChange={handleImageChange} accept="image/*" className="max-w-xs" disabled={isProfileSaving} />
+                </div>
+            </div>
            <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" defaultValue={user?.email || ""} disabled />
@@ -443,5 +483,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

@@ -21,7 +21,7 @@ import type { Role } from '@/lib/types';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signup: (email: string, password: string, name: string, role: Role) => Promise<UserCredential>;
+  signup: (email: string, password: string, name: string, role: Role, photoURL?: string) => Promise<UserCredential>;
   login: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -41,15 +41,16 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signup = async (email: string, password: string, name: string, role: Role) => {
+  const signup = async (email: string, password: string, name: string, role: Role, photoURL?: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { user } = userCredential;
     if(user) {
-        await updateProfile(user, { displayName: name });
+        await updateProfile(user, { displayName: name, photoURL });
         await addUser({
             uid: user.uid,
             email: user.email,
             name: name,
+            photoURL,
             createdAt: new Date(),
             role: role,
         });
