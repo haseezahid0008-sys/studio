@@ -59,7 +59,8 @@ export default function LiveTrackingPage() {
                 console.error(err);
                 setError('Failed to load salesmen data. Please try again.');
             } finally {
-                setIsLoading(false);
+                // Set loading to false only on the first fetch
+                if(isLoading) setIsLoading(false);
             }
         };
 
@@ -69,7 +70,7 @@ export default function LiveTrackingPage() {
         const interval = setInterval(fetchSalesmen, 30000);
         return () => clearInterval(interval);
 
-    }, []);
+    }, [isLoading]);
 
     return (
         <>
