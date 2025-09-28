@@ -330,6 +330,8 @@ export default function NewSalePage() {
     });
 
     if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Cloudinary upload failed:", errorData);
         throw new Error('Image upload failed');
     }
 
@@ -567,5 +569,3 @@ export default function NewSalePage() {
     </>
   )
 }
-
-    

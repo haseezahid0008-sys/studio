@@ -26,7 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getAppSettings, updateAppSettings, getUser, resetAllData, addUser, uploadImage } from "@/lib/firestore";
+import { getAppSettings, updateAppSettings, getUser, resetAllData, addUser } from "@/lib/firestore";
 import type { AppSettings, AppUser } from "@/lib/types";
 import { useTheme } from "next-themes";
 import { updateProfile } from "firebase/auth";
@@ -43,6 +43,28 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+const CLOUDINARY_CLOUD_NAME = 'dlurl7eyy';
+const CLOUDINARY_UPLOAD_PRESET = 'image-host';
+
+const uploadToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Cloudinary upload failed:", errorData);
+        throw new Error('Image upload failed');
+    }
+
+    const data = await response.json();
+    return data.secure_url;
+};
 
 export default function SettingsPage() {
   const { user, updatePassword } = useAuth();
@@ -152,7 +174,7 @@ export default function SettingsPage() {
       let photoURL = user.photoURL;
 
       if (profileImageFile) {
-        photoURL = await uploadImage(profileImageFile, `profile-pictures/${user.uid}_${profileImageFile.name}`);
+        photoURL = await uploadToCloudinary(profileImageFile);
       }
       
       // Update Firebase Auth profile

@@ -12,7 +12,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
-import { getAppSettings, uploadImage } from '@/lib/firestore';
+import { getAppSettings } from '@/lib/firestore';
 import type { AppSettings, Role } from '@/lib/types';
 import {
   Select,
@@ -22,6 +22,29 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ROLES } from '@/lib/types';
+
+const CLOUDINARY_CLOUD_NAME = 'dlurl7eyy';
+const CLOUDINARY_UPLOAD_PRESET = 'image-host';
+
+const uploadToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Cloudinary upload failed:", errorData);
+        throw new Error('Image upload failed');
+    }
+
+    const data = await response.json();
+    return data.secure_url;
+};
 
 
 export default function SignupPage() {
@@ -67,7 +90,7 @@ export default function SignupPage() {
     try {
       let photoURL: string | undefined = undefined;
       if (profileImage) {
-          photoURL = await uploadImage(profileImage, `profile-pictures/${Date.now()}_${profileImage.name}`);
+          photoURL = await uploadToCloudinary(profileImage);
       }
       await signup(email, password, name, role, photoURL);
       router.push('/');

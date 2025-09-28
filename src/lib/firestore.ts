@@ -20,15 +20,6 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Product, Sale, Expense, AppUser, AppSettings, Assignment, WorkerTask, Customer, Payment } from './types';
 
-// Image Upload function (Firebase Storage - kept for other potential uses)
-export const uploadImage = async (file: File, path: string): Promise<string> => {
-    const storageRef = ref(storage, path);
-    const snapshot = await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    return downloadURL;
-};
-
-
 // Product functions
 const productsCollection = collection(db, 'products');
 
