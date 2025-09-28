@@ -51,6 +51,9 @@ export default function RootLayout({
                             <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                                 {children}
                             </main>
+                            <footer className="py-4 px-6 text-center text-xs text-muted-foreground">
+                                Developed by <a href="http://waseemakram.wuaze.com" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-foreground">Waseem Akram</a>
+                            </footer>
                         </div>
                     </div>
               </SidebarProvider>
