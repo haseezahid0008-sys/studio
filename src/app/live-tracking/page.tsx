@@ -21,8 +21,10 @@ function MapDisplay({ salesmen }: { salesmen: AppUser[] }) {
     const defaultCenter: [number, number] = [30.3753, 69.3451]; // Default center for Pakistan
     const mapRef = useRef<LeafletMap | null>(null);
 
+    // This useEffect ensures the map instance is cleaned up on component unmount.
+    // This is crucial to prevent the "Map container is already initialized" error, especially in development with hot-reloading.
     useEffect(() => {
-        // Cleanup function to remove map instance on component unmount or re-render
+        // The return function from useEffect is the cleanup function.
         return () => {
             if (mapRef.current) {
                 mapRef.current.remove();
@@ -88,7 +90,7 @@ export default function LiveTrackingPage() {
 
         // Cleanup interval on component unmount
         return () => clearInterval(interval);
-    }, [isLoading]); // Dependency on isLoading ensures this effect runs once initially
+    }, [isLoading]); // Dependency on isLoading ensures this effect runs once initially and sets up the interval correctly.
 
     return (
         <>
